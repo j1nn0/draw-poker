@@ -1,0 +1,22 @@
+node_modules/
+
+# Local agent/tool state
+.codegraph/
+.omo/
+.serena/
+
+# Logs and runtime output
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+
+# Coverage and generated output
+coverage/
+dist/
+build/
