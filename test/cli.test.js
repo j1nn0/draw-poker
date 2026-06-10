@@ -33,12 +33,12 @@ function runCli(input) {
   });
 }
 
-test("immediate quit: q exits 0 and shows Draw Poker, Enter card numbers, and Goodbye.", async () => {
+test("immediate quit: q exits 0 and shows credit, hand, and Goodbye.", async () => {
   const { code, stdout } = await runCli("q\n");
 
   assert.equal(code, 0);
-  assert.match(stdout, /Draw Poker/);
-  assert.match(stdout, /Enter card numbers to hold, or q to quit\./);
+  assert.match(stdout, /Credit: /);
+  assert.match(stdout, /Hand:/);
   assert.match(stdout, /Goodbye\./);
 });
 

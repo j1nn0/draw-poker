@@ -133,6 +133,19 @@ export function getPayTable() {
 export function calculatePayout(handName) {
   return getPayTable()[handName] || 0;
 }
+export function drawDoubleUpCards(deck) {
+  return {
+    dealerCard: deck[0],
+    playerCards: [deck[1], deck[2], deck[3], deck[4]],
+    remainingDeck: deck.slice(5),
+  };
+}
+
+export function playDoubleUp(dealerCard, playerCard) {
+  const dealerValue = RANK_VALUES.get(dealerCard.rank);
+  const playerValue = RANK_VALUES.get(playerCard.rank);
+  return playerValue > dealerValue;
+}
 
 export function formatHand(hand) {
   return hand.map((card, index) => `${index + 1}:${card.rank}${card.suit}`).join("  ");
