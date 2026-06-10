@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node ./src/cli.js",
     "test": "node --test",
+    "coverage": "node --test --experimental-test-coverage",
     "build": "node --check ./src/game.js && node --check ./src/cli.js"
   },
   "engines": {
