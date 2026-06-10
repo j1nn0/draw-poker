@@ -1,5 +1,8 @@
 # Repository Instructions
 
+## Top Priority Rule
+- Always write responses to users in Japanese.
+
 ## Project Shape
 - This is a small dependency-free Node.js ESM CLI app, not a web app or TypeScript project.
 - Runtime entrypoint is `src/cli.js`; pure poker logic lives in `src/game.js`; tests live in `test/game.test.js`.
