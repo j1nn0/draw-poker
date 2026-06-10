@@ -104,10 +104,34 @@ export function evaluateHand(hand) {
   }
 
   if (groups[0] === 2) {
-    return { name: "Pair", rank: 1 };
+    const pairRank = [...counts.entries()].find(([, count]) => count === 2)[0];
+    if (pairRank >= RANK_VALUES.get("J")) {
+      return { name: "Jacks or Better", rank: 1 };
+    }
+    return { name: "High Card", rank: 0 };
   }
 
+
+
   return { name: "High Card", rank: 0 };
+}
+export function getPayTable() {
+  return {
+    "Royal Flush": 250,
+    "Straight Flush": 50,
+    "Four of a Kind": 25,
+    "Full House": 9,
+    "Flush": 6,
+    "Straight": 4,
+    "Three of a Kind": 3,
+    "Two Pair": 2,
+    "Jacks or Better": 1,
+    "High Card": 0,
+  };
+}
+
+export function calculatePayout(handName) {
+  return getPayTable()[handName] || 0;
 }
 
 export function formatHand(hand) {

@@ -41,3 +41,28 @@ test("formats visual hand with selected and exchange states", () => {
   assert.match(output, /CHANGE\s+KEEP/);
   assert.match(output.split("\n")[0], /v/);
 });
+test("scores Jacks or Better for pair of J or higher", () => {
+  const result = evaluateHand([
+    { rank: "J", suit: "S" },
+    { rank: "J", suit: "H" },
+    { rank: "5", suit: "D" },
+    { rank: "9", suit: "C" },
+    { rank: "K", suit: "H" },
+  ]);
+
+  assert.equal(result.name, "Jacks or Better");
+  assert.equal(result.rank, 1);
+});
+
+test("scores High Card for pair of 10 or lower", () => {
+  const result = evaluateHand([
+    { rank: "10", suit: "S" },
+    { rank: "10", suit: "H" },
+    { rank: "5", suit: "D" },
+    { rank: "9", suit: "C" },
+    { rank: "K", suit: "H" },
+  ]);
+
+  assert.equal(result.name, "High Card");
+  assert.equal(result.rank, 0);
+});

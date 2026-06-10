@@ -8,6 +8,7 @@ import {
   dealHand,
   drawCards,
   evaluateHand,
+  calculatePayout,
   formatHand,
   formatVisualHand,
   parseHoldInput,
@@ -21,13 +22,26 @@ async function main() {
     output.write("Draw Poker\n");
     output.write("Enter card numbers to hold, or q to quit.\n\n");
   }
+  let playing = true;
+  let credits = 100;
+  let gamesPlayed = 0;
+  let gamesWon = 0;
+  let bestHand = null;
 
   try {
-    let playing = true;
 
     while (playing) {
+      if (credits <= 0) {
+        output.write("Game over! Out of credits.\n");
+        break;
+      }
+
+      output.write(`Credit: ${credits}\n`);
+      credits -= 1;
       const shuffled = shuffleDeck(createDeck());
       const initialDeal = dealHand(shuffled);
+
+      let result;
 
       if (input.isTTY) {
         const exchangeIndexes = await selectExchangeCards(initialDeal.hand);
@@ -39,7 +53,7 @@ async function main() {
 
         const heldIndexes = indexesNotSelected(initialDeal.hand, exchangeIndexes);
         const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
-        const result = evaluateHand(finalDeal.hand);
+        result = evaluateHand(finalDeal.hand);
         output.write(`\nFinal:\n${formatVisualHand(finalDeal.hand)}\n`);
         output.write(`Result: ${result.name}\n\n`);
       } else {
@@ -55,12 +69,20 @@ async function main() {
         try {
           const heldIndexes = parseHoldInput(answer);
           const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
-          const result = evaluateHand(finalDeal.hand);
+          result = evaluateHand(finalDeal.hand);
           output.write(`Final: ${formatHand(finalDeal.hand)}\n`);
           output.write(`Result: ${result.name}\n\n`);
         } catch (error) {
           output.write(`${error.message}\n\n`);
         }
+      }
+      if (result) {
+        const payout = calculatePayout(result.name);
+        credits += payout;
+        output.write(`Win: ${payout} / Credit: ${credits}\n`);
+        gamesPlayed += 1;
+        if (payout > 0) gamesWon += 1;
+        if (!bestHand || result.rank > bestHand.rank) bestHand = result;
       }
 
       if (!input.isTTY) {
@@ -68,11 +90,16 @@ async function main() {
         continue;
       }
 
-      const next = await rl.question("Play again? (Y/n): ");
-      playing = next.trim().toLowerCase() !== "n";
+      const next = await rl.question("Press Enter to continue, q to quit: ");
+      playing = next.trim().toLowerCase() !== "q";
       output.write("\n");
     }
   } finally {
+    output.write("\n=== Game Over ===\n");
+    output.write(`Games played: ${gamesPlayed}\n`);
+    output.write(`Games won: ${gamesWon}\n`);
+    output.write(`Best hand: ${bestHand ? bestHand.name : "N/A"}\n`);
+    output.write(`Final credit: ${credits}\n`);
     rl.close();
   }
 }
