@@ -119,7 +119,9 @@ export function drawDoubleUpCards(deck) {
 export function playDoubleUp(dealerCard, playerCard) {
   const dealerValue = RANK_VALUES.get(dealerCard.rank);
   const playerValue = RANK_VALUES.get(playerCard.rank);
-  return playerValue > dealerValue;
+  if (playerValue > dealerValue) return "win";
+  if (playerValue < dealerValue) return "lose";
+  return "push";
 }
 
 export function formatHand(hand) {

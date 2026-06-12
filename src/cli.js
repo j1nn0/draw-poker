@@ -194,10 +194,14 @@ async function playDoubleUpLoop(rl, initialPayout) {
     const dealerStr = formatCard(dealerCard);
     const playerStr = formatCard(playerCard);
 
-    if (playDoubleUp(dealerCard, playerCard)) {
+    const result = playDoubleUp(dealerCard, playerCard);
+
+    if (result === "win") {
       payout *= 2;
       doubleUps += 1;
       output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 勝ち！配当: ${payout}\n`);
+    } else if (result === "push") {
+      output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 引き分け！配当維持。もう1回！\n`);
     } else {
       payout = 0;
       output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 負け！配当はなくなった…\n`);
