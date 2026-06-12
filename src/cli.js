@@ -127,25 +127,15 @@ async function main() {
           const doubleUpDeck = shuffleDeck(createDeck());
           const { dealerCard, playerCards } = drawDoubleUpCards(doubleUpDeck);
 
-          output.write("ディーラー:\n");
-          output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
-          output.write("カードを選んでね (1-4):\n");
-          output.write(`${renderCardsRow(playerCards, [0, 1, 2, 3])}\n`);
-          output.write(`${renderCardLabels(4)}\n`);
+          const cardIndex = await selectDoubleUpCard(dealerCard, playerCards);
 
-          const choice = await rl.question("\n番号を入力: ");
-
-          const cardIndex = parseInt(choice.trim(), 10) - 1;
-
-          if (cardIndex < 0 || cardIndex > 3 || Number.isNaN(cardIndex)) {
-            output.write("無効な選択です。ダブルアップ中止。\n");
+          if (cardIndex === null) {
             break;
           }
 
           const playerCard = playerCards[cardIndex];
-          const faceDown = [0, 1, 2, 3].filter((i) => i !== cardIndex);
-          output.write("\nあなたのカード:\n");
-          output.write(`${renderCardsRow(playerCards, faceDown)}\n`);
+
+          output.write(`\n${renderTwoCards(dealerCard, playerCard)}\n\n`);
 
           const dealerStr = formatCard(dealerCard);
           const playerStr = formatCard(playerCard);
@@ -153,10 +143,10 @@ async function main() {
           if (playDoubleUp(dealerCard, playerCard)) {
             payout *= 2;
             currentDoubleUps += 1;
-            output.write(`\n${dealerStr}  VS  ${playerStr} → 勝ち！配当: ${payout}\n`);
+            output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 勝ち！配当: ${payout}\n`);
           } else {
             payout = 0;
-            output.write(`\n${dealerStr}  VS  ${playerStr} → 負け！配当はなくなった…\n`);
+            output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 負け！配当はなくなった…\n`);
             break;
           }
         }
@@ -308,6 +298,66 @@ function selectExchangeCards(hand) {
   });
 }
 
+function selectDoubleUpCard(dealerCard, playerCards) {
+  return new Promise((resolve) => {
+    let selectedIndex = 0;
+    const wasRaw = input.isRaw;
+
+    const render = () => {
+      output.write("\x1b[2J\x1b[H");
+      output.write("ダブルアップ\n\n");
+      output.write("ディーラー:\n");
+      output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
+      output.write("←/→で選択  Enterで決定  qでやめる\n\n");
+      const cursorLine = playerCards.map((_, i) =>
+        i === selectedIndex ? "   v   " : "       ",
+      ).join(" ");
+      output.write(`${cursorLine}\n`);
+      output.write(`${renderCardsRow(playerCards, [0, 1, 2, 3])}\n`);
+      output.write(`${renderCardLabels(4)}\n`);
+    };
+
+    const cleanup = () => {
+      input.off("keypress", onKeypress);
+      input.setRawMode(wasRaw);
+    };
+
+    const finish = (selection) => {
+      cleanup();
+      resolve(selection);
+    };
+
+    const onKeypress = (_text, key) => {
+      if (key.name === "left") {
+        selectedIndex = (selectedIndex + 3) % 4;
+        render();
+        return;
+      }
+
+      if (key.name === "right") {
+        selectedIndex = (selectedIndex + 1) % 4;
+        render();
+        return;
+      }
+
+      if (key.name === "return") {
+        finish(selectedIndex);
+        return;
+      }
+
+      if (key.name === "q" || (key.ctrl && key.name === "c")) {
+        finish(null);
+      }
+    };
+
+    emitKeypressEvents(input);
+    input.setRawMode(true);
+    input.resume();
+    input.on("keypress", onKeypress);
+    render();
+  });
+}
+
 function indexesNotSelected(hand, selectedIndexes) {
   const indexes = new Set();
 
@@ -370,6 +420,12 @@ function renderCardsRow(cards, faceDownIndexes) {
   return [0, 1, 2, 3, 4].map((lineIdx) =>
     allLines.map((cardLines) => cardLines[lineIdx]).join(" "),
   ).join("\n");
+}
+
+function renderTwoCards(card1, card2) {
+  const lines1 = formatCardLines(card1);
+  const lines2 = formatCardLines(card2);
+  return lines1.map((line, i) => `${line}  ${lines2[i]}`).join("\n");
 }
 
 function renderCardLabels(count) {
