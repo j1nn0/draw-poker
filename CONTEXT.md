@@ -24,7 +24,7 @@ _Avoid_: Gamble, risk game
 **High Score**:
 The best records achieved across all sessions: highest コイン reached, best hand rank, and maximum consecutive double-ups.
 **ペイテーブル**:
-The payout schedule for winning hands, denominated per coin. A higher bet multiplies the base payout linearly, except Royal Flush at 10 coins pays 8000 (max bet bonus). Pay table values follow Dragon Quest casino poker standards.
+The payout schedule for winning hands, denominated per coin. A higher bet multiplies the base payout linearly, except Royal Flush at 10 coins pays 8000 (max bet bonus).
 _Avoid_: Payout chart, odds table
 **Pair**:
 Any pair of matching ranks (2-2 up to A-A). The minimum winning hand, pays 1× base.
