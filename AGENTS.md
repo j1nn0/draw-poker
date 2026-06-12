@@ -23,10 +23,11 @@
 ## Implementation Notes
 - Keep the app dependency-free unless the user explicitly asks otherwise; current code uses only Node built-ins.
 - `shuffleDeck(deck, random = Math.random)` accepts an injectable RNG, so prefer deterministic tests through that hook instead of mocking globals.
-- `evaluateHand()` ranks hands from `High Card` rank `0` through `Royal Flush` rank `9` and handles the ace-low straight wheel. Pairs of J or higher return `Jacks or Better` (rank 1); pairs of 10 or lower return `High Card` (rank 0).
-- `getPayTable()` returns an object mapping hand names to bet-specific payout arrays (index 0 unused, indexes 1-5 for bet amounts). `calculatePayout(handName, bet = 1)` returns the payout for a given hand name and bet amount. Royal Flush at 5 coins pays 4000 (max bet bonus).
-- `drawDoubleUpCards(deck)` returns a dealer card and 4 player cards for the double-up mini-game. `playDoubleUp(dealerCard, playerCard)` returns true if the player's card rank is higher than the dealer's.
-- Data persistence uses `~/.draw-poker/` for JSON storage. The `DRAW_POKER_DATA_DIR` environment variable overrides this for testing.
-
-- Tests are intentionally minimal: they cover scoring, hand ranking, draw behavior, and persistence, but do not cover every edge case in the CLI loop or double-up flow.
-- There is no lint, formatter, TypeScript, CI workflow, or generated-code step in this repo.
+:- `evaluateHand()` ranks hands from `High Card` rank `0` through `Royal Flush` rank `9` and handles the ace-low straight wheel. Any pair returns `Pair` (rank 1) — Dragon Quest casino rules, no Jacks-or-Better distinction.
+:- `getPayTable()` returns an object mapping hand names to bet-specific payout arrays (index 0 unused, indexes 1-10 for bet amounts 1-10). `calculatePayout(handName, bet = 1)` returns the payout for a given hand name and bet amount. Pay table follows Dragon Quest casino poker values: Royal Flush base 500×, max bet bonus 8000 at 10 coins.
+:- `drawDoubleUpCards(deck)` returns a dealer card and 4 player cards for the double-up mini-game. `playDoubleUp(dealerCard, playerCard)` returns true if the player's card rank is higher than the dealer's.
+:- `formatCardLines(card)` is exported for reuse in cli.js double-up card art. `formatVisualHand()` uses Japanese labels ("交換" / "残す") instead of "CHANGE" / "KEEP".
+:- `localizeHandName(name)` in cli.js maps English hand names to Japanese (e.g. "Royal Flush" → "ロイヤルストレートフラッシュ").
+:- Double-up card selection uses interactive arrow-key navigation (←/→, Enter, q) matching the main game's card exchange pattern.
+:- Bet input validates integer-only (`/^\d+$/`) with separate error messages for non-integer vs out-of-range.
+:- Data persistence uses `~/.draw-poker/` for JSON storage. The `DRAW_POKER_DATA_DIR` environment variable overrides this for testing.

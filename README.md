@@ -31,11 +31,19 @@ pnpm start
 
 ## Controls
 
-- `←` / `→` — Select a card
+- `←` / `→` — Select a card (also in double-up)
 - `Space` — Toggle exchange for selected card
 - `a` — Exchange all cards
-- `Enter` — Draw
+- `k` — Keep all (clear exchange selection)
+- `Enter` — Draw / Confirm double-up card
 - `q` — Quit
+
+## Game Flow
+
+- Bet amount persists as default for the next hand
+- Losing hands auto-continue to the next round
+- After a win, optional **Double Up** mini-game with arrow-key card selection
+- Quit anytime by pressing `q` at the bet prompt
 
 ## Commands
 
