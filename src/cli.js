@@ -182,7 +182,7 @@ async function main() {
     }
   } finally {
     const sessionStats = {
-      currentCredits: credits,
+      maxCreditReached,
       bestHandRank: bestHand ? bestHand.rank : 0,
       bestHandName: bestHand ? bestHand.name : "N/A",
       maxDoubleUps,

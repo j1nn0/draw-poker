@@ -1,6 +1,6 @@
 export function updateHighScores(current, session) {
   return {
-    maxCredits: Math.max(current.maxCredits, session.currentCredits),
+    maxCredits: Math.max(current.maxCredits, session.maxCreditReached),
     bestHandRank: Math.max(current.bestHandRank, session.bestHandRank),
     bestHandName:
       session.bestHandRank > current.bestHandRank

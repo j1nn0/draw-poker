@@ -4,7 +4,7 @@ import { updateHighScores } from "../src/scoring.js";
 
 test("updateHighScores updates maxCredits when higher", () => {
   const current = { maxCredits: 100, bestHandRank: 5, bestHandName: "Flush", maxDoubleUps: 2 };
-  const session = { currentCredits: 200, bestHandRank: 4, bestHandName: "Straight", maxDoubleUps: 1 };
+  const session = { maxCreditReached: 200, bestHandRank: 4, bestHandName: "Straight", maxDoubleUps: 1 };
   const updated = updateHighScores(current, session);
 
   assert.equal(updated.maxCredits, 200);
@@ -15,7 +15,7 @@ test("updateHighScores updates maxCredits when higher", () => {
 
 test("updateHighScores keeps existing bestHandRank when higher", () => {
   const current = { maxCredits: 100, bestHandRank: 9, bestHandName: "Royal Flush", maxDoubleUps: 2 };
-  const session = { currentCredits: 200, bestHandRank: 8, bestHandName: "Straight Flush", maxDoubleUps: 3 };
+  const session = { maxCreditReached: 200, bestHandRank: 8, bestHandName: "Straight Flush", maxDoubleUps: 3 };
   const updated = updateHighScores(current, session);
 
   assert.equal(updated.maxCredits, 200);
@@ -26,7 +26,7 @@ test("updateHighScores keeps existing bestHandRank when higher", () => {
 
 test("updateHighScores updates bestHandName when rank improves", () => {
   const current = { maxCredits: 100, bestHandRank: 5, bestHandName: "Flush", maxDoubleUps: 2 };
-  const session = { currentCredits: 50, bestHandRank: 7, bestHandName: "Four of a Kind", maxDoubleUps: 1 };
+  const session = { maxCreditReached: 50, bestHandRank: 7, bestHandName: "Four of a Kind", maxDoubleUps: 1 };
   const updated = updateHighScores(current, session);
 
   assert.equal(updated.maxCredits, 100);
@@ -37,7 +37,7 @@ test("updateHighScores updates bestHandName when rank improves", () => {
 
 test("updateHighScores updates all fields when session exceeds", () => {
   const current = { maxCredits: 100, bestHandRank: 5, bestHandName: "Flush", maxDoubleUps: 2 };
-  const session = { currentCredits: 200, bestHandRank: 9, bestHandName: "Royal Flush", maxDoubleUps: 5 };
+  const session = { maxCreditReached: 200, bestHandRank: 9, bestHandName: "Royal Flush", maxDoubleUps: 5 };
   const updated = updateHighScores(current, session);
 
   assert.equal(updated.maxCredits, 200);
