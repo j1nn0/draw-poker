@@ -40,6 +40,24 @@ pnpm start
 - 負けた時は自動で次のゲームに進みます
 - 画面の言語はすべて日本語です
 
+## データ保存
+
+ゲームの進行データは以下の場所に自動で保存されます：
+
+- **`~/.draw-poker/credits.json`** — コイン残高（次回起動時に復元）
+- **`~/.draw-poker/highscores.json`** — 歴代記録（最高コイン・最高役・最大ダブルアップ）
+
+環境変数 `DRAW_POKER_DATA_DIR` で保存先ディレクトリを変更できます：
+
+```sh
+# カレントディレクトリに保存する例
+export DRAW_POKER_DATA_DIR="./draw-poker-data"
+pnpm start
+
+# テスト実行時は一時ディレクトリを指定
+DRAW_POKER_DATA_DIR=/tmp/test-draw-poker pnpm test
+```
+
 ## 操作方法
 
 | キー | 操作 |
