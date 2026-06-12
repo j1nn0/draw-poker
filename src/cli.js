@@ -138,6 +138,7 @@ async function main() {
           const cardIndex = await selectDoubleUpCard(dealerCard, playerCards);
 
           if (cardIndex === null) {
+            output.write("\x1b[2J\x1b[Hダブルアップ中止。\n");
             break;
           }
 
