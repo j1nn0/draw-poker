@@ -7,7 +7,7 @@
 - This is a small dependency-free Node.js ESM CLI app, not a web app or TypeScript project.
 - Runtime entrypoint is `src/cli.js`; pure poker logic lives in `src/game.js`; persistence logic lives in `src/persistence.js`; scoring logic lives in `src/scoring.js`; tests live in `test/`.
 - `package.json` declares `"type": "module"`, so local imports need explicit `.js` extensions.
-- Use `pnpm` here. `packageManager` is pinned to `pnpm@10.0.0`; Node must be `>=20.0.0`.
+- Use `pnpm` here. `packageManager` is pinned to `pnpm@10.0.0`; Node must be `>=22.0.0`.
 
 ## Commands
 - Install: `pnpm install`.

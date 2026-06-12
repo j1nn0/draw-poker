@@ -13,7 +13,7 @@
     "build": "node --check ./src/game.js && node --check ./src/cli.js"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "packageManager": "pnpm@10.0.0"
 }
