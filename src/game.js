@@ -139,20 +139,31 @@ export function formatVisualHand(hand, selectedIndex = null, exchangeIndexes = n
 
 export function formatCardLines(card) {
   const suit = formatSuit(card.suit);
-  const left = `${card.rank}${suit.symbol}`.padEnd(5, " ");
-  const right = `${suit.symbol}${card.rank}`.padStart(5, " ");
+  const sr = suit.color || "";
+  const se = suit.color ? "\x1b[0m" : "";
 
-  return ["+-----+", `|${left}|`, `|  ${suit.code}  |`, `|${right}|`, "+-----+"];
+  // Build and pad without color, then inject colors into the suit symbol
+  const leftPadded = `${card.rank}${suit.symbol}`.padEnd(5, " ");
+  const rightPadded = `${suit.symbol}${card.rank}`.padStart(5, " ");
+
+  const left = leftPadded.replace(suit.symbol, `${sr}${suit.symbol}${se}`);
+  const right = rightPadded.replace(suit.symbol, `${sr}${suit.symbol}${se}`);
+
+  const mid = suit.color
+    ? `|  ${sr}${suit.code}${se}  |`
+    : `|  ${suit.code}  |`;
+
+  return ["+-----+", `|${left}|`, mid, `|${right}|`, "+-----+"];
 }
 
 function formatSuit(suit) {
+  const red = "\x1b[31m";
   const suits = new Map([
     ["S", { code: "S", symbol: "♠" }],
-    ["H", { code: "H", symbol: "♥" }],
-    ["D", { code: "D", symbol: "♦" }],
+    ["H", { code: "H", symbol: "♥", color: red }],
+    ["D", { code: "D", symbol: "♦", color: red }],
     ["C", { code: "C", symbol: "♣" }],
   ]);
-
   return suits.get(suit) ?? { code: suit, symbol: suit };
 }
 
