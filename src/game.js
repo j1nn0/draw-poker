@@ -41,27 +41,6 @@ export function drawCards(hand, deck, heldIndexes) {
   };
 }
 
-export function parseHoldInput(input) {
-  const trimmed = input.trim();
-
-  if (trimmed === "") {
-    return new Set();
-  }
-
-  const indexes = new Set();
-
-  for (const token of trimmed.split(/[\s,]+/)) {
-    const cardNumber = Number(token);
-
-    if (!Number.isInteger(cardNumber) || cardNumber < 1 || cardNumber > 5) {
-      throw new Error("Hold choices must be card numbers from 1 to 5.");
-    }
-
-    indexes.add(cardNumber - 1);
-  }
-
-  return indexes;
-}
 
 export function evaluateHand(hand) {
   const values = hand.map((card) => RANK_VALUES.get(card.rank)).sort((a, b) => a - b);
@@ -117,21 +96,24 @@ export function evaluateHand(hand) {
 }
 export function getPayTable() {
   return {
-    "Royal Flush": 250,
-    "Straight Flush": 50,
-    "Four of a Kind": 25,
-    "Full House": 9,
-    "Flush": 6,
-    "Straight": 4,
-    "Three of a Kind": 3,
-    "Two Pair": 2,
-    "Jacks or Better": 1,
-    "High Card": 0,
+    "Royal Flush": [0, 250, 500, 750, 1000, 4000],
+    "Straight Flush": [0, 50, 100, 150, 200, 250],
+    "Four of a Kind": [0, 25, 50, 75, 100, 125],
+    "Full House": [0, 9, 18, 27, 36, 45],
+    "Flush": [0, 6, 12, 18, 24, 30],
+    "Straight": [0, 4, 8, 12, 16, 20],
+    "Three of a Kind": [0, 3, 6, 9, 12, 15],
+    "Two Pair": [0, 2, 4, 6, 8, 10],
+    "Jacks or Better": [0, 1, 2, 3, 4, 5],
+    "High Card": [0, 0, 0, 0, 0, 0],
   };
 }
 
-export function calculatePayout(handName) {
-  return getPayTable()[handName] || 0;
+export function calculatePayout(handName, bet = 1) {
+  const table = getPayTable();
+  const multipliers = table[handName];
+  if (!multipliers) return 0;
+  return multipliers[bet] !== undefined ? multipliers[bet] : 0;
 }
 export function drawDoubleUpCards(deck) {
   return {

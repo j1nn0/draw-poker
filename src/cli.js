@@ -11,9 +11,7 @@ import {
   calculatePayout,
   drawDoubleUpCards,
   playDoubleUp,
-  formatHand,
   formatVisualHand,
-  parseHoldInput,
   shuffleDeck,
 } from "./game.js";
 import { loadCredits, saveCredits, loadHighScores, saveHighScores } from "./persistence.js";
@@ -26,11 +24,15 @@ async function main() {
   let credits = loadCredits();
   let gamesPlayed = 0;
   let gamesWon = 0;
+  let totalBet = 0;
+  let totalPayout = 0;
+  let maxCreditReached = credits;
   let bestHand = null;
   let maxDoubleUps = 0;
   const highScores = loadHighScores();
 
   try {
+    showPayTable();
 
     while (playing) {
       if (credits <= 0) {
@@ -50,120 +52,116 @@ async function main() {
         output.write(`  Best hand: ${highScores.bestHandName}\n`);
         output.write(`  Max double-ups: ${highScores.maxDoubleUps}\n\n`);
 
-        const reset = input.isTTY
-          ? await rl.question("Continue with 100 credits? (y/n): ")
-          : "n";
+        const answer = await rl.question("Continue with 100 credits? (y/n): ");
 
-        if (reset.trim().toLowerCase() === "y") {
+        if (answer.trim().toLowerCase() === "y") {
           credits = 100;
-          gamesPlayed = 0;
-          gamesWon = 0;
-          bestHand = null;
-          maxDoubleUps = 0;
           continue;
         }
 
         break;
       }
 
+      const maxBet = Math.min(5, credits);
       output.write(`Credit: ${credits}\n`);
-      credits -= 1;
+      let bet = 0;
+
+      while (bet < 1 || bet > maxBet) {
+        const answer = await rl.question(`Bet (1-${maxBet}): `);
+
+        if (answer.trim().toLowerCase() === "q") {
+          playing = false;
+          break;
+        }
+
+        bet = parseInt(answer.trim(), 10);
+
+        if (Number.isNaN(bet) || bet < 1 || bet > maxBet) {
+          output.write(`Enter a number between 1 and ${maxBet}.\n`);
+          bet = 0;
+        }
+      }
+
+      if (!playing) {
+        output.write("Goodbye.\n");
+        break;
+      }
+
+      credits -= bet;
+      totalBet += bet;
+      maxCreditReached = Math.max(maxCreditReached, credits);
+
       const shuffled = shuffleDeck(createDeck());
       const initialDeal = dealHand(shuffled);
 
-      let result;
+      const exchangeIndexes = await selectExchangeCards(initialDeal.hand);
 
-      if (input.isTTY) {
-        const exchangeIndexes = await selectExchangeCards(initialDeal.hand);
-
-        if (exchangeIndexes === null) {
-          output.write("Goodbye.\n");
-          break;
-        }
-
-        const heldIndexes = indexesNotSelected(initialDeal.hand, exchangeIndexes);
-        const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
-        result = evaluateHand(finalDeal.hand);
-        output.write(`\nFinal:\n${formatVisualHand(finalDeal.hand)}\n`);
-        output.write(`Result: ${result.name}\n\n`);
-      } else {
-        output.write(`Hand: ${formatHand(initialDeal.hand)}\n`);
-
-        const answer = await rl.question("Hold cards (1-5, separated by spaces): ");
-
-        if (answer.trim().toLowerCase() === "q") {
-          output.write("Goodbye.\n");
-          break;
-        }
-
-        try {
-          const heldIndexes = parseHoldInput(answer);
-          const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
-          result = evaluateHand(finalDeal.hand);
-          output.write(`Final: ${formatHand(finalDeal.hand)}\n`);
-          output.write(`Result: ${result.name}\n\n`);
-        } catch (error) {
-          output.write(`${error.message}\n\n`);
-        }
+      if (exchangeIndexes === null) {
+        credits += bet;
+        totalBet -= bet;
+        output.write("Goodbye.\n");
+        break;
       }
-      if (result) {
-        let payout = calculatePayout(result.name);
-        let currentDoubleUps = 0;
 
-        if (payout > 0) {
-          while (currentDoubleUps < 5) {
-            const wantDoubleUp = input.isTTY
-              ? await rl.question("Double up? (y/n): ")
-              : await rl.question("Double up? (y/n): ");
+      const heldIndexes = indexesNotSelected(initialDeal.hand, exchangeIndexes);
+      const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
+      const result = evaluateHand(finalDeal.hand);
+      output.write(`\nFinal:\n${formatVisualHand(finalDeal.hand)}\n`);
+      output.write(`Result: ${result.name}\n\n`);
 
-            if (wantDoubleUp.trim().toLowerCase() !== "y") {
-              break;
-            }
+      let payout = calculatePayout(result.name, bet);
+      let currentDoubleUps = 0;
 
-            const doubleUpDeck = shuffleDeck(createDeck());
-            const { dealerCard, playerCards } = drawDoubleUpCards(doubleUpDeck);
+      if (payout > 0) {
+        while (currentDoubleUps < 5) {
+          const wantDoubleUp = await rl.question("Double up? (y/n): ");
 
-            output.write(`Dealer: ${formatCard(dealerCard)}\n`);
-            output.write(`1: [?]  2: [?]  3: [?]  4: [?]\n`);
-
-            const choice = input.isTTY
-              ? await rl.question("Pick a card (1-4): ")
-              : await rl.question("Pick a card (1-4): ");
-
-            const cardIndex = parseInt(choice.trim(), 10) - 1;
-            if (cardIndex < 0 || cardIndex > 3 || Number.isNaN(cardIndex)) {
-              output.write("Invalid choice. Double up cancelled.\n");
-              break;
-            }
-
-            const playerCard = playerCards[cardIndex];
-            output.write(`Your card: ${formatCard(playerCard)}\n`);
-
-            if (playDoubleUp(dealerCard, playerCard)) {
-              payout *= 2;
-              currentDoubleUps += 1;
-              output.write(`Win! Payout: ${payout}\n`);
-            } else {
-              payout = 0;
-              output.write("Lose! Payout lost.\n");
-              break;
-            }
+          if (wantDoubleUp.trim().toLowerCase() !== "y") {
+            break;
           }
 
-          maxDoubleUps = Math.max(maxDoubleUps, currentDoubleUps);
+          const doubleUpDeck = shuffleDeck(createDeck());
+          const { dealerCard, playerCards } = drawDoubleUpCards(doubleUpDeck);
+
+          output.write(`Dealer: ${formatCard(dealerCard)}\n`);
+          output.write(`1: [?]  2: [?]  3: [?]  4: [?]\n`);
+
+          const choice = await rl.question("Pick a card (1-4): ");
+
+          const cardIndex = parseInt(choice.trim(), 10) - 1;
+
+          if (cardIndex < 0 || cardIndex > 3 || Number.isNaN(cardIndex)) {
+            output.write("Invalid choice. Double up cancelled.\n");
+            break;
+          }
+
+          const playerCard = playerCards[cardIndex];
+          output.write(`Your card: ${formatCard(playerCard)}\n`);
+
+          if (playDoubleUp(dealerCard, playerCard)) {
+            payout *= 2;
+            currentDoubleUps += 1;
+            output.write(`Win! Payout: ${payout}\n`);
+          } else {
+            payout = 0;
+            output.write("Lose! Payout lost.\n");
+            break;
+          }
         }
 
-        credits += payout;
-        output.write(`Win: ${payout} / Credit: ${credits}\n`);
-        gamesPlayed += 1;
-        if (payout > 0) gamesWon += 1;
-        if (!bestHand || result.rank > bestHand.rank) bestHand = result;
+        maxDoubleUps = Math.max(maxDoubleUps, currentDoubleUps);
       }
 
-      if (!input.isTTY) {
-        playing = false;
-        continue;
-      }
+      credits += payout;
+      totalPayout += payout;
+      maxCreditReached = Math.max(maxCreditReached, credits);
+      saveCredits(credits);
+      output.write(`Win: ${payout} / Credit: ${credits}\n`);
+      gamesPlayed += 1;
+
+      if (payout > 0) gamesWon += 1;
+
+      if (!bestHand || result.rank > bestHand.rank) bestHand = result;
 
       const next = await rl.question("Press Enter to continue, q to quit: ");
       playing = next.trim().toLowerCase() !== "q";
@@ -183,17 +181,24 @@ async function main() {
     output.write("\n=== Game Over ===\n");
     output.write(`Games played: ${gamesPlayed}\n`);
     output.write(`Games won: ${gamesWon}\n`);
+    output.write(`Total bet: ${totalBet}\n`);
+    output.write(`Total payout: ${totalPayout}\n`);
+    const netProfit = totalPayout - totalBet;
+    output.write(`Net profit: ${netProfit >= 0 ? "+" : ""}${netProfit}\n`);
     output.write(`Best hand: ${bestHand ? bestHand.name : "N/A"}\n`);
     output.write(`Max double-ups: ${maxDoubleUps}\n`);
     output.write(`Final credit: ${credits}\n`);
 
     const newRecords = [];
-    if (updatedHighScores.maxCredits === credits && credits > highScores.maxCredits) {
+
+    if (updatedHighScores.maxCredits === maxCreditReached && maxCreditReached > highScores.maxCredits) {
       newRecords.push("Highest credit");
     }
+
     if (updatedHighScores.bestHandRank === (bestHand ? bestHand.rank : 0) && (bestHand ? bestHand.rank : 0) > highScores.bestHandRank) {
       newRecords.push("Best hand");
     }
+
     if (updatedHighScores.maxDoubleUps === maxDoubleUps && maxDoubleUps > highScores.maxDoubleUps) {
       newRecords.push("Max double-ups");
     }
@@ -294,6 +299,24 @@ function indexesNotSelected(hand, selectedIndexes) {
   }
 
   return indexes;
+}
+
+function showPayTable() {
+  output.write("\n╔════════════════════════════════════╗\n");
+  output.write("║           Pay Table               ║\n");
+  output.write("╠════════════════════════════════════╣\n");
+  output.write("║ Hand                1×    5×      ║\n");
+  output.write("╠════════════════════════════════════╣\n");
+  output.write("║ Royal Flush        250   4000     ║\n");
+  output.write("║ Straight Flush      50    250     ║\n");
+  output.write("║ Four of a Kind      25    125     ║\n");
+  output.write("║ Full House           9     45     ║\n");
+  output.write("║ Flush                6     30     ║\n");
+  output.write("║ Straight             4     20     ║\n");
+  output.write("║ Three of a Kind      3     15     ║\n");
+  output.write("║ Two Pair             2     10     ║\n");
+  output.write("║ Jacks or Better      1      5     ║\n");
+  output.write("╚════════════════════════════════════╝\n\n");
 }
 
 function formatCard(card) {

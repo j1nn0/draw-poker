@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { evaluateHand, formatVisualHand, parseHoldInput } from "../src/game.js";
+import { evaluateHand, formatVisualHand } from "../src/game.js";
 
 test("scores royal flush highest", () => {
   const result = evaluateHand([
@@ -16,13 +16,6 @@ test("scores royal flush highest", () => {
   assert.equal(result.rank, 9);
 });
 
-test("rejects malformed hold input", () => {
-  assert.throws(() => parseHoldInput("1 2 6 x"), /Hold choices must be card numbers from 1 to 5/);
-});
-
-test("parses empty hold input as no held cards", () => {
-  assert.deepEqual(parseHoldInput(""), new Set());
-});
 
 test("formats visual hand with selected and exchange states", () => {
   const output = formatVisualHand(

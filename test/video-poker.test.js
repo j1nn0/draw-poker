@@ -21,9 +21,16 @@ test("returns 0 for unknown hand names", () => {
   assert.equal(calculatePayout(""), 0);
 });
 
-test("pay table has correct values for Jacks or Better", () => {
+test("pay table has correct per-coin values", () => {
   const table = getPayTable();
-  assert.equal(table["Jacks or Better"], 1);
-  assert.equal(table["High Card"], 0);
-  assert.equal(table["Royal Flush"], 250);
+  assert.deepEqual(table["Jacks or Better"], [0, 1, 2, 3, 4, 5]);
+  assert.deepEqual(table["High Card"], [0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(table["Royal Flush"], [0, 250, 500, 750, 1000, 4000]);
+});
+
+test("calculatePayout with explicit bet returns correct values", () => {
+  assert.equal(calculatePayout("Royal Flush", 5), 4000);
+  assert.equal(calculatePayout("Jacks or Better", 3), 3);
+  assert.equal(calculatePayout("Two Pair", 4), 8);
+  assert.equal(calculatePayout("High Card", 5), 0);
 });
