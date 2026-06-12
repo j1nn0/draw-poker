@@ -282,7 +282,7 @@ function selectExchangeCards(hand) {
     const render = () => {
       output.write("\x1b[2J\x1b[H");
       output.write("ドローポーカー\n");
-      output.write("←/→選択  Space切替  a全部交換  k全部キープ  Enter決定  q終了\n\n");
+      output.write("←/→選択  1-5切替  Space切替  a全部交換  k全部キープ  Enter決定  q終了\n\n");
       output.write(`${formatVisualHand(hand, selectedIndex, exchangeIndexes)}\n`);
     };
 
@@ -333,9 +333,20 @@ function selectExchangeCards(hand) {
         render();
         return;
       }
-
       if (key.name === "return") {
         finish(exchangeIndexes);
+        return;
+      }
+
+      if (["1", "2", "3", "4", "5"].includes(key.name)) {
+        const index = parseInt(key.name, 10) - 1;
+        if (exchangeIndexes.has(index)) {
+          exchangeIndexes.delete(index);
+        } else {
+          exchangeIndexes.add(index);
+        }
+        selectedIndex = index;
+        render();
         return;
       }
 
