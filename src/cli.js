@@ -362,7 +362,7 @@ function selectDoubleUpCard(dealerCard, playerCards) {
       output.write("ダブルアップ\n\n");
       output.write("ディーラー:\n");
       output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
-      output.write("←/→で選択  Enterで決定  qでやめる\n\n");
+      output.write("←/→選択  1-4で直接選択  Enter決定  qでやめる\n\n");
       const cursorLine = playerCards.map((_, i) =>
         i === selectedIndex ? "   v   " : "       ",
       ).join(" ");
@@ -396,6 +396,11 @@ function selectDoubleUpCard(dealerCard, playerCards) {
 
       if (key.name === "return") {
         finish(selectedIndex);
+        return;
+      }
+
+      if (["1", "2", "3", "4"].includes(key.name)) {
+        finish(parseInt(key.name, 10) - 1);
         return;
       }
 
