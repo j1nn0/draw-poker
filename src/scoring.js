@@ -9,3 +9,12 @@ export function updateHighScores(current, session) {
     maxDoubleUps: Math.max(current.maxDoubleUps, session.maxDoubleUps),
   };
 }
+
+export function accumulateStats(current, session) {
+  return {
+    totalGamesPlayed: current.totalGamesPlayed + (session.gamesPlayed || 0),
+    totalGamesWon: current.totalGamesWon + (session.gamesWon || 0),
+    totalBet: current.totalBet + (session.totalBet || 0),
+    totalPayout: current.totalPayout + (session.totalPayout || 0),
+  };
+}

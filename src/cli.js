@@ -16,7 +16,7 @@ import {
   shuffleDeck,
 } from "./game.js";
 import { loadCredits, saveCredits, loadHighScores, saveHighScores } from "./persistence.js";
-import { updateHighScores } from "./scoring.js";
+import { updateHighScores, accumulateStats } from "./scoring.js";
 
 async function main() {
   const rl = createInterface({ input, output });
@@ -224,9 +224,11 @@ function endSession(rl, state, highScores) {
     bestHandName: bestHand ? bestHand.name : "N/A",
     maxDoubleUps,
   };
-  const updatedHighScores = updateHighScores(highScores, sessionStats);
+  const updatedHighScores = {
+    ...updateHighScores(highScores, sessionStats),
+    ...accumulateStats(highScores, { gamesPlayed, gamesWon, totalBet, totalPayout }),
+  };
   saveHighScores(updatedHighScores);
-  saveCredits(credits);
 
   output.write("\n=== ゲーム終了 ===\n");
   output.write(`プレイ回数: ${gamesPlayed}\n`);
@@ -257,6 +259,12 @@ function endSession(rl, state, highScores) {
   if (newRecords.length > 0) {
     output.write(`\n*** 新記録！${newRecords.join("、")} ***\n`);
   }
+
+  output.write(`\n累計:\n`);
+  output.write(`  通算プレイ回数: ${updatedHighScores.totalGamesPlayed}\n`);
+  output.write(`  通算勝利回数: ${updatedHighScores.totalGamesWon}\n`);
+  const totalNet = updatedHighScores.totalPayout - updatedHighScores.totalBet;
+  output.write(`  通算収支: ${totalNet >= 0 ? "+" : ""}${totalNet}\n`);
 
   output.write(`\n歴代記録:\n`);
   output.write(`  最高コイン: ${updatedHighScores.maxCredits}\n`);

@@ -41,6 +41,10 @@ test("saveHighScores and loadHighScores round-trip", () => {
     bestHandRank: 9,
     bestHandName: "Royal Flush",
     maxDoubleUps: 3,
+    totalGamesPlayed: 10,
+    totalGamesWon: 4,
+    totalBet: 100,
+    totalPayout: 250,
   };
   saveHighScores(scores);
   const loaded = loadHighScores();

@@ -39,6 +39,10 @@ export function loadHighScores() {
       bestHandRank: typeof parsed.bestHandRank === "number" ? parsed.bestHandRank : 0,
       bestHandName: typeof parsed.bestHandName === "string" ? parsed.bestHandName : "N/A",
       maxDoubleUps: typeof parsed.maxDoubleUps === "number" ? parsed.maxDoubleUps : 0,
+      totalGamesPlayed: typeof parsed.totalGamesPlayed === "number" ? parsed.totalGamesPlayed : 0,
+      totalGamesWon: typeof parsed.totalGamesWon === "number" ? parsed.totalGamesWon : 0,
+      totalBet: typeof parsed.totalBet === "number" ? parsed.totalBet : 0,
+      totalPayout: typeof parsed.totalPayout === "number" ? parsed.totalPayout : 0,
     };
   } catch {
     // File missing or malformed — return defaults
@@ -48,6 +52,10 @@ export function loadHighScores() {
     bestHandRank: 0,
     bestHandName: "N/A",
     maxDoubleUps: 0,
+    totalGamesPlayed: 0,
+    totalGamesWon: 0,
+    totalBet: 0,
+    totalPayout: 0,
   };
 }
 
