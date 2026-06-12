@@ -77,15 +77,23 @@ async function main() {
           break;
         }
 
-        bet = answer.trim() === "" ? lastBet : parseInt(answer.trim(), 10);
+        const trimmed = answer.trim();
 
-        if (Number.isNaN(bet) || bet < 1 || bet > maxBet) {
+        if (trimmed === "") {
+          bet = lastBet;
+        } else if (!/^\d+$/.test(trimmed)) {
+          output.write("整数で入力してね。\n");
+          bet = 0;
+          continue;
+        } else {
+          bet = parseInt(trimmed, 10);
+        }
+
+        if (bet < 1 || bet > maxBet) {
           output.write(`1から${maxBet}の数字を入力してね。\n`);
           bet = 0;
         }
       }
-      lastBet = bet;
-
       if (!playing) {
         output.write("またね！\n");
         break;
