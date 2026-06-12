@@ -12,8 +12,8 @@ function card(code) {
 
 const RANK_CASES = [
   { name: "High Card", rank: 0, cards: ["2S", "5H", "9D", "JC", "KC"] },
-  { name: "Jacks or Better", rank: 1, cards: ["JS", "JH", "5D", "9C", "KH"] },
-  { name: "High Card", rank: 0, cards: ["2S", "2H", "5D", "9C", "KH"] },
+  { name: "Pair", rank: 1, cards: ["JS", "JH", "5D", "9C", "KH"] },
+  { name: "Pair", rank: 1, cards: ["2S", "2H", "5D", "9C", "KH"] },
   { name: "Two Pair", rank: 2, cards: ["2S", "2H", "5D", "5C", "KH"] },
   { name: "Three of a Kind", rank: 3, cards: ["7S", "7H", "7D", "2C", "QH"] },
   { name: "Straight", rank: 4, cards: ["4S", "5H", "6D", "7C", "8H"] },

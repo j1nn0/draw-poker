@@ -83,29 +83,22 @@ export function evaluateHand(hand) {
   }
 
   if (groups[0] === 2) {
-    const pairRank = [...counts.entries()].find(([, count]) => count === 2)[0];
-    if (pairRank >= RANK_VALUES.get("J")) {
-      return { name: "Jacks or Better", rank: 1 };
-    }
-    return { name: "High Card", rank: 0 };
+    return { name: "Pair", rank: 1 };
   }
-
-
-
   return { name: "High Card", rank: 0 };
 }
 export function getPayTable() {
   return {
-    "Royal Flush": [0, 250, 500, 750, 1000, 4000],
-    "Straight Flush": [0, 50, 100, 150, 200, 250],
-    "Four of a Kind": [0, 25, 50, 75, 100, 125],
-    "Full House": [0, 9, 18, 27, 36, 45],
-    "Flush": [0, 6, 12, 18, 24, 30],
-    "Straight": [0, 4, 8, 12, 16, 20],
-    "Three of a Kind": [0, 3, 6, 9, 12, 15],
-    "Two Pair": [0, 2, 4, 6, 8, 10],
-    "Jacks or Better": [0, 1, 2, 3, 4, 5],
-    "High Card": [0, 0, 0, 0, 0, 0],
+    "Royal Flush": [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 8000],
+    "Straight Flush": [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+    "Four of a Kind": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500],
+    "Full House": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+    "Flush": [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70],
+    "Straight": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    "Three of a Kind": [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30],
+    "Two Pair": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    "Pair": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "High Card": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   };
 }
 
@@ -138,7 +131,7 @@ export function formatVisualHand(hand, selectedIndex = null, exchangeIndexes = n
   const lines = [
     hand.map((_, index) => (index === selectedIndex ? "   v   " : "       ")).join(" "),
     ...cardLines[0].map((_, lineIndex) => cardLines.map((card) => card[lineIndex]).join(" ")),
-    hand.map((_, index) => (exchangeIndexes.has(index) ? "CHANGE " : " KEEP  ")).join(" "),
+    hand.map((_, index) => (exchangeIndexes.has(index) ? "  交換 " : "  残す ")).join(" "),
   ];
 
   return lines.join("\n");

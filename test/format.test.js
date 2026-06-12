@@ -42,12 +42,12 @@ test("formatVisualHand includes cursor row when selectedIndex is provided", () =
   assert.match(output.split("\n")[0], /v/);
 });
 
-test("formatVisualHand shows CHANGE for exchange indexes", () => {
+test("formatVisualHand shows 交換 for exchange indexes", () => {
   const output = formatVisualHand([{ rank: "A", suit: "S" }], null, new Set([0]));
-  assert.match(output, /CHANGE/);
+  assert.match(output, /交換/);
 });
 
-test("formatVisualHand shows KEEP for non-exchange indexes", () => {
+test("formatVisualHand shows 残す for non-exchange indexes", () => {
   const output = formatVisualHand([{ rank: "A", suit: "S" }], null, new Set());
-  assert.match(output, /KEEP/);
+  assert.match(output, /残す/);
 });

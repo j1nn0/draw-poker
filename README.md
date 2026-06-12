@@ -1,6 +1,6 @@
 # draw-poker
 
-Terminal video poker (Jacks or Better, 1-5 coin bets) implemented with Node.js and pnpm.
+Terminal video poker (Dragon Quest casino-style, 1-10 coin bets) implemented with Node.js and pnpm.
 ## Quick Start
 
 ```sh
@@ -10,22 +10,24 @@ pnpm start
 
 ## Game Rules
 
-- Jacks or Better poker with 1-5 coin bets (chosen before each hand)
+- Dragon Quest casino poker with 1-10 coin bets (chosen before each hand)
 - Initial credit: 100 (persists across sessions)
 - Winning hands earn payouts according to the pay table (shown at startup):
-  - Royal Flush: 250 × bet (4000 at max 5-coin bet)
-  - Straight Flush: 50 × bet
-  - Four of a Kind: 25 × bet
-  - Full House: 9 × bet
-  - Flush: 6 × bet
-  - Straight: 4 × bet
+  - Royal Flush: 500 × bet (8000 at max 10-coin bet)
+  - Straight Flush: 100 × bet
+  - Four of a Kind: 50 × bet
+  - Full House: 10 × bet
+  - Flush: 7 × bet
+  - Straight: 5 × bet
   - Three of a Kind: 3 × bet
   - Two Pair: 2 × bet
-  - Jacks or Better: 1 × bet
+  - Pair: 1 × bet
   - High Card: 0
+- Any pair is a winning hand (minimum payout 1×)
 - **Double Up**: After a win, gamble your payout to double it (max 5 consecutive rounds)
 - **Game Over**: When credits reach 0, choose to continue with 100 credits or quit
 - High scores are saved across sessions (`~/.draw-poker/`)
+- UI is in Japanese (Dragon Quest style terminology)
 
 ## Controls
 
@@ -33,7 +35,7 @@ pnpm start
 - `Space` — Toggle exchange for selected card
 - `a` — Exchange all cards
 - `Enter` — Draw
-- `q` — Quit (at bet prompt or card selection)
+- `q` — Quit
 
 ## Commands
 
