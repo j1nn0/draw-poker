@@ -1,52 +1,53 @@
 # draw-poker
 
-Terminal video poker (Dragon Quest casino-style, 1-10 coin bets) implemented with Node.js and pnpm.
-## Quick Start
+ドラゴンクエストスタイルのカジノポーカーをターミナルで遊べるNode.jsアプリです。
+
+## クイックスタート
 
 ```sh
 pnpm install
 pnpm start
 ```
 
-## Game Rules
+## 遊び方
 
-- Dragon Quest casino poker with 1-10 coin bets (chosen before each hand)
-- Initial credit: 100 (persists across sessions)
-- Winning hands earn payouts according to the pay table (shown at startup):
-  - Royal Flush: 500 × bet (8000 at max 10-coin bet)
-  - Straight Flush: 100 × bet
-  - Four of a Kind: 50 × bet
-  - Full House: 10 × bet
-  - Flush: 7 × bet
-  - Straight: 5 × bet
-  - Three of a Kind: 3 × bet
-  - Two Pair: 2 × bet
-  - Pair: 1 × bet
-  - High Card: 0
-- Any pair is a winning hand (minimum payout 1×)
-- **Double Up**: After a win, gamble your payout to double it (max 5 consecutive rounds)
-- **Game Over**: When credits reach 0, choose to continue with 100 credits or quit
-- High scores are saved across sessions (`~/.draw-poker/`)
-- UI is in Japanese (Dragon Quest style terminology)
+- ドラゴンクエストカジノポーカーのルールに準拠（ベットは1〜10コイン）
+- 初期コインは100（ファイルに保存され次回起動時に継承）
+- 最低役は**ワンペア**（J以上限定なし、あらゆるペアで払い出し）
+- ペイテーブルは起動時に表示されます：
 
-## Controls
+| 役 | 1×コイン | 5×コイン | 10×コイン |
+|---|---|---|---|
+| ロイヤルストレートフラッシュ | 500 | 2500 | **8000** |
+| ストレートフラッシュ | 100 | 500 | 1000 |
+| フォーカード | 50 | 250 | 500 |
+| フルハウス | 10 | 50 | 100 |
+| フラッシュ | 7 | 35 | 70 |
+| ストレート | 5 | 25 | 50 |
+| スリーカード | 3 | 15 | 30 |
+| ツーペア | 2 | 10 | 20 |
+| ワンペア | 1 | 5 | 10 |
+| ハイカード | 0 | 0 | 0 |
 
-- `←` / `→` — Select a card (also in double-up)
-- `Space` — Toggle exchange for selected card
-- `a` — Exchange all cards
-- `k` — Keep all (clear exchange selection)
-- `Enter` — Draw / Confirm double-up card
-- `q` — Quit
+- **ダブルアップ**: 勝利後、配当を2倍に賭けられます（最大5連続）。←/→キーでカードを選び、Enterで決定
+- **ゲームオーバー**: コインが0になると100コインで続けるか終了するか選択
+- ベット額はセッション中は前回の値が引き継がれます（Enterでそのまま確定）
+- 負けた時は自動で次のゲームに進みます
+- 画面の言語はすべて日本語です
 
-## Game Flow
+## 操作方法
 
-- Bet amount persists as default for the next hand
-- Losing hands auto-continue to the next round
-- After a win, optional **Double Up** mini-game with arrow-key card selection
-- Quit anytime by pressing `q` at the bet prompt
+| キー | 操作 |
+|---|---|
+| `←` / `→` | カード選択（ダブルアップでも使用） |
+| `Space` | 選択中のカードを交換する/しないを切替 |
+| `a` | すべてのカードを交換 |
+| `k` | カード交換をすべて解除 |
+| `Enter` | 決定（交換実行 / ダブルアップのカード確定） |
+| `q` | 終了 |
 
-## Commands
+## コマンド
 
-- `pnpm start` — Run the game
-- `pnpm test` — Run tests (Node.js built-in test runner)
-- `pnpm build` — Syntax check
+- `pnpm start` — ゲームを起動
+- `pnpm test` — テスト実行（Node.js標準テストランナー）
+- `pnpm build` — 構文チェック
