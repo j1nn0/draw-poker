@@ -137,7 +137,7 @@ export function formatVisualHand(hand, selectedIndex = null, exchangeIndexes = n
   return lines.join("\n");
 }
 
-function formatCardLines(card) {
+export function formatCardLines(card) {
   const suit = formatSuit(card.suit);
   const left = `${card.rank}${suit.symbol}`.padEnd(5, " ");
   const right = `${suit.symbol}${card.rank}`.padStart(5, " ");

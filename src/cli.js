@@ -12,6 +12,7 @@ import {
   drawDoubleUpCards,
   playDoubleUp,
   formatVisualHand,
+  formatCardLines,
   shuffleDeck,
 } from "./game.js";
 import { loadCredits, saveCredits, loadHighScores, saveHighScores } from "./persistence.js";
@@ -126,10 +127,13 @@ async function main() {
           const doubleUpDeck = shuffleDeck(createDeck());
           const { dealerCard, playerCards } = drawDoubleUpCards(doubleUpDeck);
 
-          output.write(`ディーラー: ${formatCard(dealerCard)}\n`);
-          output.write(`1: [?]  2: [?]  3: [?]  4: [?]\n`);
+          output.write("ディーラー:\n");
+          output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
+          output.write("カードを選んでね (1-4):\n");
+          output.write(`${renderCardsRow(playerCards, [0, 1, 2, 3])}\n`);
+          output.write(`${renderCardLabels(4)}\n`);
 
-          const choice = await rl.question("カードを選んでね (1-4): ");
+          const choice = await rl.question("\n番号を入力: ");
 
           const cardIndex = parseInt(choice.trim(), 10) - 1;
 
@@ -139,15 +143,20 @@ async function main() {
           }
 
           const playerCard = playerCards[cardIndex];
-          output.write(`あなたのカード: ${formatCard(playerCard)}\n`);
+          const faceDown = [0, 1, 2, 3].filter((i) => i !== cardIndex);
+          output.write("\nあなたのカード:\n");
+          output.write(`${renderCardsRow(playerCards, faceDown)}\n`);
+
+          const dealerStr = formatCard(dealerCard);
+          const playerStr = formatCard(playerCard);
 
           if (playDoubleUp(dealerCard, playerCard)) {
             payout *= 2;
             currentDoubleUps += 1;
-            output.write(`勝ち！配当: ${payout}\n`);
+            output.write(`\n${dealerStr}  VS  ${playerStr} → 勝ち！配当: ${payout}\n`);
           } else {
             payout = 0;
-            output.write("負け！配当はなくなった…\n");
+            output.write(`\n${dealerStr}  VS  ${playerStr} → 負け！配当はなくなった…\n`);
             break;
           }
         }
@@ -347,6 +356,26 @@ function showPayTable() {
 
 function formatCard(card) {
   return `${card.rank}${card.suit}`;
+}
+
+function renderCardFaceDown() {
+  return ["+-----+", "|?????|", "|  ?  |", "|?????|", "+-----+"];
+}
+
+function renderCardsRow(cards, faceDownIndexes) {
+  const faceDownSet = new Set(faceDownIndexes);
+  const allLines = cards.map((card, i) =>
+    faceDownSet.has(i) ? renderCardFaceDown() : formatCardLines(card),
+  );
+  return [0, 1, 2, 3, 4].map((lineIdx) =>
+    allLines.map((cardLines) => cardLines[lineIdx]).join(" "),
+  ).join("\n");
+}
+
+function renderCardLabels(count) {
+  return Array.from({ length: count }, (_, i) =>
+    `${i + 1}`.padStart(3).padEnd(7),
+  ).join(" ");
 }
 
 main().catch((error) => {
