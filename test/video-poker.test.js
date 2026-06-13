@@ -16,9 +16,9 @@ test("calculates payout from pay table", () => {
   assert.equal(calculatePayout("High Card"), 0);
 });
 
-test("returns 0 for unknown hand names", () => {
-  assert.equal(calculatePayout("Unknown Hand"), 0);
-  assert.equal(calculatePayout(""), 0);
+test("throws for unknown hand names", () => {
+  assert.throws(() => calculatePayout("Unknown Hand"), { message: "Unknown hand name: Unknown Hand" });
+  assert.throws(() => calculatePayout(""), { message: "Unknown hand name: " });
 });
 
 test("pay table has correct per-coin values", () => {

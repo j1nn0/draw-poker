@@ -51,3 +51,21 @@ test("formatVisualHand shows 残す for non-exchange indexes", () => {
   const output = formatVisualHand([{ rank: "A", suit: "S" }], null, new Set());
   assert.match(output, /残す/);
 });
+
+test("formatVisualHand with selected and exchange states shows combined markers", () => {
+  const output = formatVisualHand(
+    [
+      { rank: "A", suit: "S" },
+      { rank: "10", suit: "C" },
+    ],
+    1,
+    new Set([0]),
+  );
+
+  assert.match(output, /A♠/);
+  assert.match(output, /10♣/);
+  assert.match(output, /\|  S  \|/);
+  assert.match(output, /\|  C  \|/);
+  assert.match(output, /交換\s+残す/);
+  assert.match(output.split("\n")[0], /v/);
+});

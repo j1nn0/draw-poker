@@ -24,13 +24,14 @@
 - Keep the app dependency-free unless the user explicitly asks otherwise; current code uses only Node built-ins.
 - `shuffleDeck(deck, random = Math.random)` accepts an injectable RNG, so prefer deterministic tests through that hook instead of mocking globals.
 - `evaluateHand()` ranks hands from `High Card` rank `0` through `Royal Flush` rank `9` and handles the ace-low straight wheel. Any pair returns `Pair` (rank 1) — Dragon Quest casino rules, no Jacks-or-Better distinction.
-- `getPayTable()` returns an object mapping hand names to bet-specific payout arrays (index 0 unused, indexes 1-10 for bet amounts 1-10). `calculatePayout(handName, bet = 1)` returns the payout for a given hand name and bet amount. Pay table follows Dragon Quest casino poker values: Royal Flush base 500×, max bet bonus 8000 at 10 coins.
+- `getPayTable()` returns an object mapping hand names to bet-specific payout arrays (index 0 unused, indexes 1-10 for bet amounts 1-10). `calculatePayout(handName, bet = 1)` returns the payout for a given hand name and bet amount (throws on unknown hand names). Pay table follows Dragon Quest casino poker values: Royal Flush base 500×, max bet bonus 8000 at 10 coins.
 - `drawDoubleUpCards(deck)` returns a dealer card and 4 player cards for the double-up mini-game. `playDoubleUp(dealerCard, playerCard)` returns `"win"`, `"lose"`, or `"push"` (was boolean before 2026-06-12). On a tie, the payout is preserved and the player can try again.
 - `formatCardLines(card)` is exported for reuse in cli.js double-up card art. Hearts and diamonds are colored red via ANSI `\x1b[31m` codes. `formatVisualHand()` uses Japanese labels ("交換" / "残す") instead of "CHANGE" / "KEEP".
 - `localizeHandName(name)` in cli.js maps English hand names to Japanese (e.g. "Royal Flush" → "ロイヤルストレートフラッシュ").
 - Card selection uses interactive arrow-key navigation (←/→, Space, Enter, q) plus number keys: 1-5 toggles in the exchange screen, 1-4 selects directly in double-up.
 - Bet input validates integer-only (`/^\d+$/`) with separate error messages for non-integer vs out-of-range.
-- Data persistence uses `~/.draw-poker/` for JSON storage. The `DRAW_POKER_DATA_DIR` environment variable overrides this for testing.
+- Data persistence uses `~/.draw-poker/` for JSON storage. The `DRAW_POKER_DATA_DIR` environment variable overrides this for testing. `saveCredits()` writes only when credits actually change; `endSession()` always saves final state.
 - `main()` in `cli.js` is split into focused phase functions: `handleGameOver()`, `getBet()`, `playDoubleUpLoop()`, and `endSession()`. Session state is orchestrated in ~70 lines.
-- `updateHighScores()` merges peak records; `accumulateStats()` sums cumulative totals (totalGamesPlayed/Won/Bet/Payout) across sessions into `highscores.json`.
-- The `finally` block in `main()` calls `endSession()` which saves both peak records and cumulative stats, then displays session summary and lifetime totals.
+- `updateHighScores()` merges peak records; `accumulateStats()` sums cumulative totals (totalGamesPlayed/Won/Bet/Payout) across sessions. `mergeSessionResults()` combines both into a single call — preferred over calling the two separately. `detectNewRecords()` compares session peaks against stored highscores to identify which records were broken.
+- `getHeldIndexes(hand, exchangeIndexes)` in game.js inverts a set of exchange indexes into the held-indexes set expected by `drawCards()`. Renamed from `indexesNotSelected` in cli.js for clarity.
+- `main()` checks `input.isTTY` at the start and exits early with a message when stdin is not a terminal, preventing cryptic raw-mode errors on piped input.

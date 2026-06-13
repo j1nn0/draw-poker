@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
+import { accumulateStats, detectNewRecords, mergeSessionResults, updateHighScores } from "../src/scoring.js";
 import test from "node:test";
-import { accumulateStats, updateHighScores } from "../src/scoring.js";
 
 test("updateHighScores updates maxCredits when higher", () => {
   const current = { maxCredits: 100, bestHandRank: 5, bestHandName: "Flush", maxDoubleUps: 2 };
@@ -65,4 +65,72 @@ test("accumulateStats works with empty session defaults", () => {
   assert.equal(updated.totalGamesWon, 2);
   assert.equal(updated.totalBet, 50);
   assert.equal(updated.totalPayout, 100);
+});
+
+test("mergeSessionResults combines peak records and cumulative stats", () => {
+  const highScores = {
+    maxCredits: 100, bestHandRank: 5, bestHandName: "Flush", maxDoubleUps: 2,
+    totalGamesPlayed: 50, totalGamesWon: 20, totalBet: 500, totalPayout: 800,
+  };
+  const session = {
+    maxCreditReached: 200, bestHandRank: 7, bestHandName: "Four of a Kind", maxDoubleUps: 3,
+    gamesPlayed: 10, gamesWon: 3, totalBet: 100, totalPayout: 200,
+  };
+  const result = mergeSessionResults(highScores, session);
+  assert.equal(result.maxCredits, 200);
+  assert.equal(result.bestHandRank, 7);
+  assert.equal(result.bestHandName, "Four of a Kind");
+  assert.equal(result.maxDoubleUps, 3);
+  assert.equal(result.totalGamesPlayed, 60);
+  assert.equal(result.totalGamesWon, 23);
+  assert.equal(result.totalBet, 600);
+  assert.equal(result.totalPayout, 1000);
+});
+
+test("detectNewRecords detects maxCredits record", () => {
+  const updated = { maxCredits: 500, bestHandRank: 5, maxDoubleUps: 2 };
+  const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const session = { maxCreditReached: 500, bestHandRank: 5, maxDoubleUps: 2 };
+  const records = detectNewRecords(updated, previous, session);
+  assert.deepEqual(records, ["最高コイン"]);
+});
+
+test("detectNewRecords detects bestHandRank record", () => {
+  const updated = { maxCredits: 100, bestHandRank: 9, maxDoubleUps: 2 };
+  const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const session = { maxCreditReached: 100, bestHandRank: 9, maxDoubleUps: 2 };
+  const records = detectNewRecords(updated, previous, session);
+  assert.deepEqual(records, ["最高役"]);
+});
+
+test("detectNewRecords detects maxDoubleUps record", () => {
+  const updated = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 5 };
+  const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const session = { maxCreditReached: 100, bestHandRank: 5, maxDoubleUps: 5 };
+  const records = detectNewRecords(updated, previous, session);
+  assert.deepEqual(records, ["最大ダブルアップ"]);
+});
+
+test("detectNewRecords detects multiple records", () => {
+  const updated = { maxCredits: 500, bestHandRank: 9, maxDoubleUps: 5 };
+  const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const session = { maxCreditReached: 500, bestHandRank: 9, maxDoubleUps: 5 };
+  const records = detectNewRecords(updated, previous, session);
+  assert.deepEqual(records, ["最高コイン", "最高役", "最大ダブルアップ"]);
+});
+
+test("detectNewRecords returns empty array when no records broken", () => {
+  const updated = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const session = { maxCreditReached: 50, bestHandRank: 3, maxDoubleUps: 1 };
+  const records = detectNewRecords(updated, previous, session);
+  assert.deepEqual(records, []);
+});
+
+test("detectNewRecords does not flag when session value matches existing record but doesn't exceed it", () => {
+  const updated = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const previous = { maxCredits: 200, bestHandRank: 9, maxDoubleUps: 5 };
+  const session = { maxCreditReached: 100, bestHandRank: 5, maxDoubleUps: 2 };
+  const records = detectNewRecords(updated, previous, session);
+  assert.deepEqual(records, []);
 });

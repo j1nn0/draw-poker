@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { evaluateHand, formatVisualHand } from "../src/game.js";
+import { evaluateHand } from "../src/game.js";
 
 test("scores royal flush highest", () => {
   const result = evaluateHand([
@@ -17,23 +17,6 @@ test("scores royal flush highest", () => {
 });
 
 
-test("formats visual hand with selected and exchange states", () => {
-  const output = formatVisualHand(
-    [
-      { rank: "A", suit: "S" },
-      { rank: "10", suit: "C" },
-    ],
-    1,
-    new Set([0]),
-  );
-
-  assert.match(output, /A♠/);
-  assert.match(output, /10♣/);
-  assert.match(output, /\|  S  \|/);
-  assert.match(output, /\|  C  \|/);
-  assert.match(output, /交換\s+残す/);
-  assert.match(output.split("\n")[0], /v/);
-});
 test("scores Pair for any pair", () => {
   const result = evaluateHand([
     { rank: "J", suit: "S" },

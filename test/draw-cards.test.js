@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-
-import { drawCards } from "../src/game.js";
+import { drawCards, getHeldIndexes } from "../src/game.js";
 
 // Exchange Selection: drawCards(hand, deck, heldIndexes) consumes the inverse
 // set of cards retained — the heldIndexes mark positions to PRESERVE, while
@@ -120,4 +119,19 @@ test("Returned deck removes exactly the consumed replacement cards", () => {
     { rank: "10", suit: "C" },
     { rank: "9", suit: "S" },
   ]);
+});
+
+test("getHeldIndexes returns all indexes not in exchange set", () => {
+  const indexes = getHeldIndexes([1, 2, 3, 4, 5], new Set([0, 2]));
+  assert.deepEqual([...indexes].sort(), [1, 3, 4]);
+});
+
+test("getHeldIndexes returns all indexes when exchange set is empty", () => {
+  const indexes = getHeldIndexes([1, 2, 3, 4, 5], new Set());
+  assert.deepEqual([...indexes].sort(), [0, 1, 2, 3, 4]);
+});
+
+test("getHeldIndexes returns empty when all indexes are in exchange set", () => {
+  const indexes = getHeldIndexes([1, 2, 3, 4, 5], new Set([0, 1, 2, 3, 4]));
+  assert.deepEqual([...indexes].sort(), []);
 });

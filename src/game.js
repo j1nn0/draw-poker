@@ -105,7 +105,9 @@ export function getPayTable() {
 export function calculatePayout(handName, bet = 1) {
   const table = getPayTable();
   const multipliers = table[handName];
-  if (!multipliers) return 0;
+  if (!multipliers) {
+    throw new Error(`Unknown hand name: ${handName}`);
+  }
   return multipliers[bet] !== undefined ? multipliers[bet] : 0;
 }
 export function drawDoubleUpCards(deck) {
@@ -156,6 +158,16 @@ export function formatCardLines(card) {
     : `|  ${suit.code}  |`;
 
   return ["+-----+", `|${left}|`, mid, `|${right}|`, "+-----+"];
+}
+
+export function getHeldIndexes(hand, exchangeIndexes) {
+  const indexes = new Set();
+  for (let index = 0; index < hand.length; index += 1) {
+    if (!exchangeIndexes.has(index)) {
+      indexes.add(index);
+    }
+  }
+  return indexes;
 }
 
 function formatSuit(suit) {

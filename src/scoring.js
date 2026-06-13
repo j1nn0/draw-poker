@@ -18,3 +18,24 @@ export function accumulateStats(current, session) {
     totalPayout: current.totalPayout + (session.totalPayout || 0),
   };
 }
+
+export function mergeSessionResults(highScores, sessionStats) {
+  return {
+    ...updateHighScores(highScores, sessionStats),
+    ...accumulateStats(highScores, sessionStats),
+  };
+}
+
+export function detectNewRecords(updatedHighScores, previousHighScores, sessionPeak) {
+  const records = [];
+  if (updatedHighScores.maxCredits === sessionPeak.maxCreditReached && sessionPeak.maxCreditReached > previousHighScores.maxCredits) {
+    records.push("最高コイン");
+  }
+  if (updatedHighScores.bestHandRank === sessionPeak.bestHandRank && sessionPeak.bestHandRank > previousHighScores.bestHandRank) {
+    records.push("最高役");
+  }
+  if (updatedHighScores.maxDoubleUps === sessionPeak.maxDoubleUps && sessionPeak.maxDoubleUps > previousHighScores.maxDoubleUps) {
+    records.push("最大ダブルアップ");
+  }
+  return records;
+}

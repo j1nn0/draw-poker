@@ -13,12 +13,20 @@ import {
   playDoubleUp,
   formatVisualHand,
   formatCardLines,
+  getHeldIndexes,
   shuffleDeck,
 } from "./game.js";
 import { loadCredits, saveCredits, loadHighScores, saveHighScores } from "./persistence.js";
-import { updateHighScores, accumulateStats } from "./scoring.js";
+import { mergeSessionResults, detectNewRecords } from "./scoring.js";
+
+
 
 async function main() {
+  if (!input.isTTY) {
+    output.write("このゲームは対話型ターミナルが必要です。\n");
+    return;
+  }
+
   const rl = createInterface({ input, output });
 
   let credits = loadCredits();
@@ -58,23 +66,21 @@ async function main() {
       const { bet } = betResult;
       lastBet = bet;
 
-      credits -= bet;
-      totalBet += bet;
-      maxCreditReached = Math.max(maxCreditReached, credits);
-
       // --- Deal & card exchange ---
       const shuffled = shuffleDeck(createDeck());
       const initialDeal = dealHand(shuffled);
       const exchangeIndexes = await selectExchangeCards(initialDeal.hand);
       if (exchangeIndexes === null) {
-        credits += bet;
-        totalBet -= bet;
         output.write("またね！\n");
         break;
       }
 
+      credits -= bet;
+      totalBet += bet;
+      maxCreditReached = Math.max(maxCreditReached, credits);
+
       // --- Draw & evaluate ---
-      const heldIndexes = indexesNotSelected(initialDeal.hand, exchangeIndexes);
+      const heldIndexes = getHeldIndexes(initialDeal.hand, exchangeIndexes);
       const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
       const result = evaluateHand(finalDeal.hand);
       output.write(`\n最終:\n${formatVisualHand(finalDeal.hand)}\n`);
@@ -92,10 +98,11 @@ async function main() {
       }
 
       // --- Post-round bookkeeping ---
+      const prevCredits = credits;
       credits += payout;
       totalPayout += payout;
       maxCreditReached = Math.max(maxCreditReached, credits);
-      saveCredits(credits);
+      if (credits !== prevCredits) saveCredits(credits);
       output.write(`配当: ${payout} / コイン: ${credits}\n`);
       gamesPlayed += 1;
       if (payout > 0) gamesWon += 1;
@@ -223,12 +230,18 @@ function endSession(rl, state, highScores) {
     bestHandRank: bestHand ? bestHand.rank : 0,
     bestHandName: bestHand ? bestHand.name : "N/A",
     maxDoubleUps,
+    gamesPlayed,
+    gamesWon,
+    totalBet,
+    totalPayout,
   };
-  const updatedHighScores = {
-    ...updateHighScores(highScores, sessionStats),
-    ...accumulateStats(highScores, { gamesPlayed, gamesWon, totalBet, totalPayout }),
-  };
-  saveHighScores(updatedHighScores);
+  const updatedHighScores = mergeSessionResults(highScores, sessionStats);
+  try {
+    saveHighScores(updatedHighScores);
+    saveCredits(credits);
+  } catch (err) {
+    output.write(`保存に失敗しました: ${err.message}\n`);
+  }
 
   output.write("\n=== ゲーム終了 ===\n");
   output.write(`プレイ回数: ${gamesPlayed}\n`);
@@ -242,19 +255,8 @@ function endSession(rl, state, highScores) {
   output.write(`最大ダブルアップ: ${maxDoubleUps}\n`);
   output.write(`最終コイン: ${credits}\n`);
 
-  const newRecords = [];
-
-  if (updatedHighScores.maxCredits === maxCreditReached && maxCreditReached > highScores.maxCredits) {
-    newRecords.push("最高コイン");
-  }
-
-  if (updatedHighScores.bestHandRank === (bestHand ? bestHand.rank : 0) && (bestHand ? bestHand.rank : 0) > highScores.bestHandRank) {
-    newRecords.push("最高役");
-  }
-
-  if (updatedHighScores.maxDoubleUps === maxDoubleUps && maxDoubleUps > highScores.maxDoubleUps) {
-    newRecords.push("最大ダブルアップ");
-  }
+  const sessionPeak = { maxCreditReached, bestHandRank: bestHand ? bestHand.rank : 0, maxDoubleUps };
+  const newRecords = detectNewRecords(updatedHighScores, highScores, sessionPeak);
 
   if (newRecords.length > 0) {
     output.write(`\n*** 新記録！${newRecords.join("、")} ***\n`);
@@ -428,17 +430,6 @@ function selectDoubleUpCard(dealerCard, playerCards) {
   });
 }
 
-function indexesNotSelected(hand, selectedIndexes) {
-  const indexes = new Set();
-
-  for (let index = 0; index < hand.length; index += 1) {
-    if (!selectedIndexes.has(index)) {
-      indexes.add(index);
-    }
-  }
-
-  return indexes;
-}
 
 function localizeHandName(name) {
   const names = {
