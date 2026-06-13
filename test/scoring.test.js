@@ -88,49 +88,43 @@ test("mergeSessionResults combines peak records and cumulative stats", () => {
 });
 
 test("detectNewRecords detects maxCredits record", () => {
-  const updated = { maxCredits: 500, bestHandRank: 5, maxDoubleUps: 2 };
   const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const session = { maxCreditReached: 500, bestHandRank: 5, maxDoubleUps: 2 };
-  const records = detectNewRecords(updated, previous, session);
+  const records = detectNewRecords(previous, session);
   assert.deepEqual(records, ["最高コイン"]);
 });
 
 test("detectNewRecords detects bestHandRank record", () => {
-  const updated = { maxCredits: 100, bestHandRank: 9, maxDoubleUps: 2 };
   const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const session = { maxCreditReached: 100, bestHandRank: 9, maxDoubleUps: 2 };
-  const records = detectNewRecords(updated, previous, session);
+  const records = detectNewRecords(previous, session);
   assert.deepEqual(records, ["最高役"]);
 });
 
 test("detectNewRecords detects maxDoubleUps record", () => {
-  const updated = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 5 };
   const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const session = { maxCreditReached: 100, bestHandRank: 5, maxDoubleUps: 5 };
-  const records = detectNewRecords(updated, previous, session);
+  const records = detectNewRecords(previous, session);
   assert.deepEqual(records, ["最大ダブルアップ"]);
 });
 
 test("detectNewRecords detects multiple records", () => {
-  const updated = { maxCredits: 500, bestHandRank: 9, maxDoubleUps: 5 };
   const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const session = { maxCreditReached: 500, bestHandRank: 9, maxDoubleUps: 5 };
-  const records = detectNewRecords(updated, previous, session);
+  const records = detectNewRecords(previous, session);
   assert.deepEqual(records, ["最高コイン", "最高役", "最大ダブルアップ"]);
 });
 
 test("detectNewRecords returns empty array when no records broken", () => {
-  const updated = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const previous = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const session = { maxCreditReached: 50, bestHandRank: 3, maxDoubleUps: 1 };
-  const records = detectNewRecords(updated, previous, session);
+  const records = detectNewRecords(previous, session);
   assert.deepEqual(records, []);
 });
 
 test("detectNewRecords does not flag when session value matches existing record but doesn't exceed it", () => {
-  const updated = { maxCredits: 100, bestHandRank: 5, maxDoubleUps: 2 };
   const previous = { maxCredits: 200, bestHandRank: 9, maxDoubleUps: 5 };
   const session = { maxCreditReached: 100, bestHandRank: 5, maxDoubleUps: 2 };
-  const records = detectNewRecords(updated, previous, session);
+  const records = detectNewRecords(previous, session);
   assert.deepEqual(records, []);
 });

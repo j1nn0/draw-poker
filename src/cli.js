@@ -49,6 +49,7 @@ async function main() {
         const result = await handleGameOver(rl, { gamesPlayed, gamesWon, bestHand, maxDoubleUps }, highScores);
         if (!result.doContinue) break;
         credits = result.credits;
+        saveCredits(credits);
         maxCreditReached = Math.max(maxCreditReached, credits);
         lastBet = 1;
         continue;
@@ -77,7 +78,6 @@ async function main() {
 
       credits -= bet;
       totalBet += bet;
-      maxCreditReached = Math.max(maxCreditReached, credits);
 
       // --- Draw & evaluate ---
       const heldIndexes = getHeldIndexes(initialDeal.hand, exchangeIndexes);
@@ -102,7 +102,13 @@ async function main() {
       credits += payout;
       totalPayout += payout;
       maxCreditReached = Math.max(maxCreditReached, credits);
-      if (credits !== prevCredits) saveCredits(credits);
+      if (credits !== prevCredits) {
+        try {
+          saveCredits(credits);
+        } catch (err) {
+          output.write(`警告: コイン残高の保存に失敗しました (${err.message})\n`);
+        }
+      }
       output.write(`配当: ${payout} / コイン: ${credits}\n`);
       gamesPlayed += 1;
       if (payout > 0) gamesWon += 1;
@@ -151,9 +157,13 @@ async function getBet(rl, maxBet, lastBet) {
   let bet = 0;
 
   while (bet < 1 || bet > maxBet) {
-    const answer = await rl.question(`ベット (1-${maxBet}) [${lastBet}]: `);
+    const answer = await rl.question(`ベット (1-${maxBet}) [${lastBet}] (pで配当表表示): `);
 
     if (answer.trim().toLowerCase() === "q") return null;
+    if (answer.trim().toLowerCase() === "p") {
+      showPayTable();
+      continue;
+    }
 
     const trimmed = answer.trim();
 
@@ -256,7 +266,7 @@ function endSession(rl, state, highScores) {
   output.write(`最終コイン: ${credits}\n`);
 
   const sessionPeak = { maxCreditReached, bestHandRank: bestHand ? bestHand.rank : 0, maxDoubleUps };
-  const newRecords = detectNewRecords(updatedHighScores, highScores, sessionPeak);
+  const newRecords = detectNewRecords(highScores, sessionPeak);
 
   if (newRecords.length > 0) {
     output.write(`\n*** 新記録！${newRecords.join("、")} ***\n`);
@@ -375,7 +385,7 @@ function selectDoubleUpCard(dealerCard, playerCards) {
       output.write("ダブルアップ\n\n");
       output.write("ディーラー:\n");
       output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
-      output.write("←/→選択  1-4で直接選択  Enter決定  qでやめる\n\n");
+      output.write("←/→選択  1-4で直接選択  Enter決定\n\n");
       const cursorLine = playerCards.map((_, i) =>
         i === selectedIndex ? "   v   " : "       ",
       ).join(" ");
@@ -417,8 +427,9 @@ function selectDoubleUpCard(dealerCard, playerCards) {
         return;
       }
 
-      if (key.name === "q" || (key.ctrl && key.name === "c")) {
-        finish(null);
+      if (key.ctrl && key.name === "c") {
+        cleanup();
+        process.exit(130);
       }
     };
 

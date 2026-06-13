@@ -18,7 +18,7 @@ _Avoid_: Money, balance, chips
 A single run of the game from launch to exit. コイン persist across sessions via file storage.
 
 **ダブルアップ**:
-An optional post-win gamble where the player can risk their current payout to double it by picking a card higher than the dealer's revealed card. Maximum 5 consecutive double-ups.
+An optional post-win gamble where the player can risk their current payout to double it by picking a card higher than the dealer's revealed card. Maximum 5 consecutive double-ups. A push (tie) preserves the payout and does not count toward the 5-round limit.
 _Avoid_: Gamble, risk game
 
 **High Score**:

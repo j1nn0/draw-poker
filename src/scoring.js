@@ -26,15 +26,15 @@ export function mergeSessionResults(highScores, sessionStats) {
   };
 }
 
-export function detectNewRecords(updatedHighScores, previousHighScores, sessionPeak) {
+export function detectNewRecords(previousHighScores, sessionPeak) {
   const records = [];
-  if (updatedHighScores.maxCredits === sessionPeak.maxCreditReached && sessionPeak.maxCreditReached > previousHighScores.maxCredits) {
+  if (sessionPeak.maxCreditReached > previousHighScores.maxCredits) {
     records.push("最高コイン");
   }
-  if (updatedHighScores.bestHandRank === sessionPeak.bestHandRank && sessionPeak.bestHandRank > previousHighScores.bestHandRank) {
+  if (sessionPeak.bestHandRank > previousHighScores.bestHandRank) {
     records.push("最高役");
   }
-  if (updatedHighScores.maxDoubleUps === sessionPeak.maxDoubleUps && sessionPeak.maxDoubleUps > previousHighScores.maxDoubleUps) {
+  if (sessionPeak.maxDoubleUps > previousHighScores.maxDoubleUps) {
     records.push("最大ダブルアップ");
   }
   return records;

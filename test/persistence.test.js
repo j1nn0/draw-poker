@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after } from "node:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -51,7 +51,6 @@ test("saveHighScores and loadHighScores round-trip", () => {
   assert.deepEqual(loaded, scores);
 });
 
-// Cleanup
-test("cleanup", () => {
+after(() => {
   rmSync(tempDir, { recursive: true });
 });

@@ -30,33 +30,30 @@ export function saveCredits(credits) {
   writeFileSync(CREDITS_FILE, JSON.stringify({ credits }, null, 2));
 }
 
+const DEFAULT_HIGH_SCORES = {
+  maxCredits: 0,
+  bestHandRank: 0,
+  bestHandName: "N/A",
+  maxDoubleUps: 0,
+  totalGamesPlayed: 0,
+  totalGamesWon: 0,
+  totalBet: 0,
+  totalPayout: 0,
+};
+
 export function loadHighScores() {
   try {
     const data = readFileSync(HIGHSCORES_FILE, "utf8");
     const parsed = JSON.parse(data);
-    return {
-      maxCredits: typeof parsed.maxCredits === "number" ? parsed.maxCredits : 0,
-      bestHandRank: typeof parsed.bestHandRank === "number" ? parsed.bestHandRank : 0,
-      bestHandName: typeof parsed.bestHandName === "string" ? parsed.bestHandName : "N/A",
-      maxDoubleUps: typeof parsed.maxDoubleUps === "number" ? parsed.maxDoubleUps : 0,
-      totalGamesPlayed: typeof parsed.totalGamesPlayed === "number" ? parsed.totalGamesPlayed : 0,
-      totalGamesWon: typeof parsed.totalGamesWon === "number" ? parsed.totalGamesWon : 0,
-      totalBet: typeof parsed.totalBet === "number" ? parsed.totalBet : 0,
-      totalPayout: typeof parsed.totalPayout === "number" ? parsed.totalPayout : 0,
-    };
+    return Object.fromEntries(
+      Object.entries(DEFAULT_HIGH_SCORES).map(([key, defaultVal]) => [
+        key,
+        typeof parsed[key] === typeof defaultVal ? parsed[key] : defaultVal,
+      ]),
+    );
   } catch {
-    // File missing or malformed — return defaults
+    return { ...DEFAULT_HIGH_SCORES };
   }
-  return {
-    maxCredits: 0,
-    bestHandRank: 0,
-    bestHandName: "N/A",
-    maxDoubleUps: 0,
-    totalGamesPlayed: 0,
-    totalGamesWon: 0,
-    totalBet: 0,
-    totalPayout: 0,
-  };
 }
 
 export function saveHighScores(highScores) {
