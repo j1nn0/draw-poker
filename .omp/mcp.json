@@ -23,6 +23,9 @@
         "--context",
         "ide"
       ]
+    },
+    "context-mode": {
+      "command": "context-mode"
     }
   }
 }
