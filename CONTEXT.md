@@ -29,3 +29,19 @@ _Avoid_: Payout chart, odds table
 **Pair**:
 Any pair of matching ranks (2-2 up to A-A). The minimum winning hand, pays 1× base.
 _Avoid_: Jacks or Better, One Pair
+
+**イベントバス**:
+A lightweight pub/sub mechanism that decouples game phases from side effects. Emits 14 event types across the game loop (`session:start`, `bet:placed`, `hand:dealt`, `exchange:selected`, `hand:evaluated`, `payout:received`, `doubleup:start/win/lose/push`, `hand:end`, `session:end`, `gameover`, `achievement:unlocked`). Implemented as a self-contained module (~15 lines) rather than Node's EventEmitter, to keep dependencies at zero.
+_Avoid_: EventEmitter, EventBus library
+
+**実績**:
+Permanent unlockable goals with specific in-game conditions. 30 achievements across 5 categories: ハンド系 (10), ダブルアップ系 (5), 累計系 (5), マイルストーン系 (4), チャレンジ系 (6). Each has a pure-function condition `condition(event, accumulatedState)`. Unlocked achievements persist in `~/.draw-poker/achievements.json` with a timestamp.
+_Avoid_: Trophies, Badges, Awards
+
+**実績チェッカー**:
+The state machine inside `src/achievements.js` that subscribes to イベントバス events, maintains `accumulatedState` (unlocked set, session counters, exchange counts), and evaluates each unfulfilled achievement's condition on every event. State is split into persistent (totalBet, totalPayout, totalGamesPlayed from highscores.json) and session-local (doubleUpStreak, lastExchangeCount, etc.).
+_Avoid_: Achievement manager, achievement service
+
+**ハンドラッパー**:
+Functions that wrap a game phase and emit the corresponding events. Three wrappers exist: `handleBet(rl, credits, lastBet)` → `{bet, credits, lastBet}`, `playDraw(rl, shuffled)` → `{hand, result, exchangeCount}`, `handlePayout(rl, result, bet, credits)` → `{payout, newCredits, doubleUps}`. Replaces inline phase logic in `main()`.
+_Avoid_: Phase handler, game phase function

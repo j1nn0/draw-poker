@@ -15,9 +15,12 @@ import {
   formatCardLines,
   getHeldIndexes,
   shuffleDeck,
+  getPayTable,
 } from "./game.js";
-import { loadCredits, saveCredits, loadHighScores, saveHighScores } from "./persistence.js";
+import { loadCredits, saveCredits, loadHighScores, saveHighScores, loadAchievements, saveAchievements } from "./persistence.js";
 import { mergeSessionResults, detectNewRecords } from "./scoring.js";
+import { emit, on } from "./eventBus.js";
+import { initAchievements, getAchievementProgress, getCategoryProgress, getTotalUnlocked, getAchievementState } from "./achievements.js";
 
 
 
@@ -40,85 +43,64 @@ async function main() {
   let maxDoubleUps = 0;
   let lastBet = 1;
 
+  emit("session:start", { credits });
+
   try {
+    // Initialize achievements
+    const achievementsData = loadAchievements();
+    initAchievements(highScores, achievementsData);
+
+    // Achievement notification display
+    on("achievement:unlocked", (data) => {
+      process.stdout.write("\x07");
+      output.write(`\n★ 実績解除: ${data.name} ★\n`);
+    });
+
     showPayTable();
 
     while (true) {
       // --- Game over check ---
       if (credits <= 0) {
-        const result = await handleGameOver(rl, { gamesPlayed, gamesWon, bestHand, maxDoubleUps }, highScores);
+        const result = await handleGameOver(rl, { gamesPlayed, gamesWon, bestHand, maxDoubleUps, maxCreditReached, totalBet, totalPayout }, highScores);
         if (!result.doContinue) break;
         credits = result.credits;
         saveCredits(credits);
         maxCreditReached = Math.max(maxCreditReached, credits);
         lastBet = 1;
+        emit("gameover");
         continue;
       }
 
       // --- Bet ---
-      const maxBet = Math.min(10, credits);
-      output.write(`コイン: ${credits}\n`);
-      if (lastBet > maxBet) lastBet = maxBet;
-      const betResult = await getBet(rl, maxBet, lastBet);
+      const betResult = await handleBet(rl, credits, lastBet);
       if (betResult === null) {
         output.write("またね！\n");
         break;
       }
-      const { bet } = betResult;
-      lastBet = bet;
+      credits = betResult.credits;
+      lastBet = betResult.lastBet;
+      totalBet += betResult.bet;
 
       // --- Deal & card exchange ---
-      const shuffled = shuffleDeck(createDeck());
-      const initialDeal = dealHand(shuffled);
-      const exchangeIndexes = await selectExchangeCards(initialDeal.hand);
-      if (exchangeIndexes === null) {
+      const drawResult = await playDraw(rl);
+      if (drawResult === null) {
         output.write("またね！\n");
         break;
       }
 
-      credits -= bet;
-      totalBet += bet;
-
-      // --- Draw & evaluate ---
-      const heldIndexes = getHeldIndexes(initialDeal.hand, exchangeIndexes);
-      const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
-      const result = evaluateHand(finalDeal.hand);
-      output.write(`\n最終:\n${formatVisualHand(finalDeal.hand)}\n`);
-      output.write(`役: ${localizeHandName(result.name)}\n\n`);
-
       // --- Payout & double-up ---
-      let payout = calculatePayout(result.name, bet);
-      let currentDoubleUps = 0;
-
-      if (payout > 0) {
-        const duResult = await playDoubleUpLoop(rl, payout);
-        payout = duResult.payout;
-        currentDoubleUps = duResult.doubleUps;
-        maxDoubleUps = Math.max(maxDoubleUps, currentDoubleUps);
-      }
-
-      // --- Post-round bookkeeping ---
-      const prevCredits = credits;
-      credits += payout;
-      totalPayout += payout;
+      const payoutResult = await handlePayout(rl, drawResult, betResult.bet, credits);
+      credits = payoutResult.credits;
+      totalPayout += payoutResult.payout;
       maxCreditReached = Math.max(maxCreditReached, credits);
-      if (credits !== prevCredits) {
-        try {
-          saveCredits(credits);
-        } catch (err) {
-          output.write(`警告: コイン残高の保存に失敗しました (${err.message})\n`);
-        }
-      }
-      output.write(`配当: ${payout} / コイン: ${credits}\n`);
       gamesPlayed += 1;
-      if (payout > 0) gamesWon += 1;
-      if (!bestHand || result.rank > bestHand.rank) bestHand = result;
+      if (payoutResult.payout > 0) gamesWon += 1;
+      maxDoubleUps = Math.max(maxDoubleUps, payoutResult.doubleUps);
+      if (!bestHand || drawResult.result.rank > bestHand.rank) bestHand = drawResult.result;
 
-      // --- Continue prompt (only on win) ---
-      if (payout > 0) {
-        const answer = await rl.question("Enterで続ける、qで終了: ");
-        if (answer.trim().toLowerCase() === "q") break;
-      }
+      // --- Continue prompt ---
+      const continueAnswer = await rl.question("Enterで続ける、qで終了: ");
+      if (continueAnswer.trim().toLowerCase() === "q") break;
       output.write("\n");
     }
   } finally {
@@ -129,7 +111,77 @@ async function main() {
   }
 }
 
+async function handleBet(rl, credits, lastBet) {
+  const maxBet = Math.min(10, credits);
+  output.write(`コイン: ${credits}\n`);
+  if (lastBet > maxBet) lastBet = maxBet;
+  const betResult = await getBet(rl, maxBet, lastBet);
+  if (betResult === null) return null;
+  const { bet } = betResult;
+  emit("bet:placed", { bet, creditsBefore: credits, creditsAfter: credits - bet });
+  return { bet, credits: credits - bet, lastBet: bet };
+}
+
+async function playDraw(rl) {
+  const shuffled = shuffleDeck(createDeck());
+  const initialDeal = dealHand(shuffled);
+  const exchangeIndexes = await selectExchangeCards(initialDeal.hand);
+  if (exchangeIndexes === null) return null;
+  emit("exchange:selected", { exchangeIndexes });
+
+  const heldIndexes = getHeldIndexes(initialDeal.hand, exchangeIndexes);
+  const finalDeal = drawCards(initialDeal.hand, initialDeal.deck, heldIndexes);
+  const result = evaluateHand(finalDeal.hand);
+  emit("hand:evaluated", { hand: finalDeal.hand, result });
+
+  output.write(`\n最終:\n${formatVisualHand(finalDeal.hand)}\n`);
+  output.write(`役: ${localizeHandName(result.name)}\n\n`);
+
+  return { hand: finalDeal.hand, result, exchangeCount: exchangeIndexes.size };
+}
+
+async function handlePayout(rl, drawResult, bet, credits) {
+  let payout = calculatePayout(drawResult.result.name, bet);
+  emit("payout:received", { payout, handName: drawResult.result.name, bet });
+
+  let currentDoubleUps = 0;
+
+  if (payout > 0) {
+    const duResult = await playDoubleUpLoop(rl, payout);
+    payout = duResult.payout;
+    currentDoubleUps = duResult.doubleUps;
+  }
+
+  const prevCredits = credits;
+  credits += payout;
+
+  emit("hand:end", { bet, payout, handResult: drawResult.result, doubleUps: currentDoubleUps, creditsAfter: credits });
+
+  if (credits !== prevCredits) {
+    try {
+      saveCredits(credits);
+    } catch (err) {
+      output.write(`警告: コイン残高の保存に失敗しました (${err.message})\n`);
+    }
+  }
+  output.write(`配当: ${payout} / コイン: ${credits}\n`);
+
+  return { payout, credits, doubleUps: currentDoubleUps };
+}
+
 async function handleGameOver(rl, stats, highScores) {
+  const sessionStats = {
+    maxCreditReached: stats.maxCreditReached,
+    bestHandRank: stats.bestHand ? stats.bestHand.rank : 0,
+    bestHandName: stats.bestHand ? stats.bestHand.name : "N/A",
+    maxDoubleUps: stats.maxDoubleUps,
+    gamesPlayed: stats.gamesPlayed,
+    gamesWon: stats.gamesWon,
+    totalBet: stats.totalBet,
+    totalPayout: stats.totalPayout,
+  };
+  const updatedHighScores = mergeSessionResults(highScores, sessionStats);
+
   output.write("\n╔══════════════════════════════════════╗\n");
   output.write("║                                      ║\n");
   output.write("║        ゲームオーバー                ║\n");
@@ -141,10 +193,10 @@ async function handleGameOver(rl, stats, highScores) {
   output.write(`勝利回数: ${stats.gamesWon}\n`);
   output.write(`最高役: ${stats.bestHand ? localizeHandName(stats.bestHand.name) : "N/A"}\n`);
   output.write(`最大ダブルアップ: ${stats.maxDoubleUps}\n\n`);
-  output.write(`歴代記録:\n`);
-  output.write(`  最高コイン: ${highScores.maxCredits}\n`);
-  output.write(`  最高役: ${localizeHandName(highScores.bestHandName)}\n`);
-  output.write(`  最大ダブルアップ: ${highScores.maxDoubleUps}\n\n`);
+  output.write("歴代記録:\n");
+  output.write(`  最高コイン: ${updatedHighScores.maxCredits}\n`);
+  output.write(`  最高役: ${localizeHandName(updatedHighScores.bestHandName)}\n`);
+  output.write(`  最大ダブルアップ: ${updatedHighScores.maxDoubleUps}\n\n`);
 
   const answer = await rl.question("100コインで続ける？ (y/n): ");
   if (answer.trim().toLowerCase() === "y") {
@@ -157,11 +209,15 @@ async function getBet(rl, maxBet, lastBet) {
   let bet = 0;
 
   while (bet < 1 || bet > maxBet) {
-    const answer = await rl.question(`ベット (1-${maxBet}) [${lastBet}] (pで配当表表示): `);
+    const answer = await rl.question(`ベット (1-${maxBet}) [${lastBet}] (pで配当表表示、aで実績一覧): `);
 
     if (answer.trim().toLowerCase() === "q") return null;
     if (answer.trim().toLowerCase() === "p") {
       showPayTable();
+      continue;
+    }
+    if (answer.trim().toLowerCase() === "a") {
+      showAchievements();
       continue;
     }
 
@@ -246,11 +302,18 @@ function endSession(rl, state, highScores) {
     totalPayout,
   };
   const updatedHighScores = mergeSessionResults(highScores, sessionStats);
+  emit("session:end", sessionStats);
+  const achievementState = getAchievementState();
   try {
     saveHighScores(updatedHighScores);
     saveCredits(credits);
   } catch (err) {
     output.write(`保存に失敗しました: ${err.message}\n`);
+  }
+  try {
+    saveAchievements(achievementState);
+  } catch (err) {
+    output.write(`実績の保存に失敗しました: ${err.message}\n`);
   }
 
   output.write("\n=== ゲーム終了 ===\n");
@@ -290,12 +353,14 @@ function selectExchangeCards(hand) {
     const exchangeIndexes = new Set();
     let selectedIndex = 0;
     const wasRaw = input.isRaw;
+    const initialEval = evaluateHand(hand);
 
     const render = () => {
       output.write("\x1b[2J\x1b[H");
       output.write("ドローポーカー\n");
       output.write("←/→選択  1-5切替  Space切替  a全部交換  k全部キープ  Enter決定  q終了\n\n");
       output.write(`${formatVisualHand(hand, selectedIndex, exchangeIndexes)}\n`);
+      output.write(`現在の役: ${localizeHandName(initialEval.name)}\n`);
     };
 
     const cleanup = () => {
@@ -385,7 +450,7 @@ function selectDoubleUpCard(dealerCard, playerCards) {
       output.write("ダブルアップ\n\n");
       output.write("ディーラー:\n");
       output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
-      output.write("←/→選択  1-4で直接選択  Enter決定\n\n");
+      output.write("←/→選択  1-4で直接選択  Enter決定  q終了\n\n");
       const cursorLine = playerCards.map((_, i) =>
         i === selectedIndex ? "   v   " : "       ",
       ).join(" ");
@@ -427,9 +492,8 @@ function selectDoubleUpCard(dealerCard, playerCards) {
         return;
       }
 
-      if (key.ctrl && key.name === "c") {
-        cleanup();
-        process.exit(130);
+      if (key.name === "q" || (key.ctrl && key.name === "c")) {
+        finish(null);
       }
     };
 
@@ -458,22 +522,90 @@ function localizeHandName(name) {
   return names[name] || name;
 }
 
+function displayWidth(str) {
+  let w = 0;
+  for (const char of str) {
+    w += char.charCodeAt(0) > 0x7F ? 2 : 1;
+  }
+  return w;
+}
+
 function showPayTable() {
-  output.write("\n╔══════════════════════════════════════════════╗\n");
-  output.write("║                  ペイテーブル                 ║\n");
-  output.write("╠══════════════════════════════════════════════╣\n");
-  output.write("║ 役                           1×     5×   10×║\n");
-  output.write("╠══════════════════════════════════════════════╣\n");
-  output.write("║ ロイヤルストレートフラッシュ   500   2500  8000║\n");
-  output.write("║ ストレートフラッシュ           100    500  1000║\n");
-  output.write("║ フォーカード                    50    250   500║\n");
-  output.write("║ フルハウス                      10     50   100║\n");
-  output.write("║ フラッシュ                       7     35    70║\n");
-  output.write("║ ストレート                       5     25    50║\n");
-  output.write("║ スリーカード                      3     15    30║\n");
-  output.write("║ ツーペア                         2     10    20║\n");
-  output.write("║ ワンペア                         1      5    10║\n");
-  output.write("╚══════════════════════════════════════════════╝\n\n");
+  const payTable = getPayTable();
+  const HAND_ORDER = [
+    "Royal Flush", "Straight Flush", "Four of a Kind", "Full House",
+    "Flush", "Straight", "Three of a Kind", "Two Pair", "Pair",
+  ];
+  const SEP = "═".repeat(46);
+
+  output.write(`\n╔${SEP}╗\n`);
+  output.write(`║${" ".repeat(17)}ペイテーブル${" ".repeat(17)}║\n`);
+  output.write(`╠${SEP}╣\n`);
+  output.write(`║ 役${" ".repeat(28)}${"1×".padStart(4)}${"5×".padStart(6)}${"10×".padStart(5)}║\n`);
+  output.write(`╠${SEP}╣\n`);
+
+  for (const handName of HAND_ORDER) {
+    const jpName = localizeHandName(handName);
+    const pad = " ".repeat(30 - displayWidth(jpName));
+    const p1  = String(payTable[handName][1]).padStart(4);
+    const p5  = String(payTable[handName][5]).padStart(6);
+    const p10 = String(payTable[handName][10]).padStart(5);
+    output.write(`║ ${jpName}${pad}${p1}${p5}${p10}║\n`);
+  }
+
+  output.write(`╚${SEP}╝\n\n`);
+}
+
+function progressBar(current, total, width = 10) {
+  const filled = Math.round((current / total) * width);
+  const empty = width - filled;
+  const color = current <= Math.floor(total * 0.3) ? "\x1b[31m" : current >= Math.ceil(total * 0.7) ? "\x1b[32m" : "\x1b[33m";
+  return `${color}${"█".repeat(filled)}\x1b[0m${"░".repeat(empty)}`;
+}
+
+function showAchievements() {
+  const progress = getAchievementProgress();
+  const categories = getCategoryProgress();
+  const total = getTotalUnlocked();
+  const SEP = "═".repeat(48);
+
+  output.write(`\n╔${SEP}╗\n`);
+  output.write(`║${" ".repeat(16)}実績一覧 (${total}/${progress.length})${" ".repeat(15)}║\n`);
+
+  const categoryOrder = ["hand", "doubleup", "cumulative", "milestone", "challenge"];
+  const catLabels = {
+    hand: "ハンド系", doubleup: "ダブルアップ系", cumulative: "累計系",
+    milestone: "マイルストーン系", challenge: "チャレンジ系",
+  };
+
+  for (const catId of categoryOrder) {
+    const cat = categories[catId];
+    if (!cat) continue;
+    const catItems = progress.filter((a) => a.category === catId);
+    const bar = progressBar(cat.unlocked, cat.total);
+    output.write(`╠${SEP}╣\n`);
+    output.write(`║ ${cat.icon || "?"} ${catLabels[catId]} ${bar} ${cat.unlocked}/${cat.total}${" ".repeat(Math.max(1, 12 - String(cat.total).length - String(cat.unlocked).length))}║\n`);
+
+    // Show up to 4 items per category (show first unlocked, first locked)
+    const unlocked = catItems.filter((a) => a.unlocked).slice(0, 2);
+    const locked = catItems.filter((a) => !a.unlocked).slice(0, 2);
+    const shown = [...unlocked, ...locked];
+
+    for (const ach of shown) {
+      const marker = ach.unlocked ? "★" : "☆";
+      const name = `${marker} ${ach.icon} ${ach.name}`;
+      const suffix = ach.unlocked ? "" : `  (${ach.description})`;
+      const line = `${name}${suffix}`;
+      const padTotal = 48 - displayWidth(line.replace(/\x1b\[[0-9;]*m/g, ""));
+      output.write(`║ ${line}${" ".repeat(Math.max(0, padTotal - 1))}║\n`);
+    }
+
+    if (catItems.length > shown.length) {
+      output.write(`║ ${" ".repeat(47)}║\n`);
+    }
+  }
+
+  output.write(`╚${SEP}╝\n\n`);
 }
 
 function formatCard(card) {

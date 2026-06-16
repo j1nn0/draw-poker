@@ -2,6 +2,13 @@ const SUITS = ["S", "H", "D", "C"];
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const RANK_VALUES = new Map(RANKS.map((rank, index) => [rank, index + 2]));
 
+const SUIT_FORMATS = new Map([
+  ["S", { code: "S", symbol: "♠" }],
+  ["H", { code: "H", symbol: "♥", color: "\x1b[31m" }],
+  ["D", { code: "D", symbol: "♦", color: "\x1b[31m" }],
+  ["C", { code: "C", symbol: "♣" }],
+]);
+
 export function createDeck() {
   return SUITS.flatMap((suit) => RANKS.map((rank) => ({ rank, suit })));
 }
@@ -128,9 +135,6 @@ export function playDoubleUp(dealerCard, playerCard) {
   return "push";
 }
 
-export function formatHand(hand) {
-  return hand.map((card, index) => `${index + 1}:${card.rank}${card.suit}`).join("  ");
-}
 
 export function formatVisualHand(hand, selectedIndex = null, exchangeIndexes = new Set()) {
   const cardLines = hand.map(formatCardLines);
@@ -173,14 +177,7 @@ export function getHeldIndexes(hand, exchangeIndexes) {
 }
 
 function formatSuit(suit) {
-  const red = "\x1b[31m";
-  const suits = new Map([
-    ["S", { code: "S", symbol: "♠" }],
-    ["H", { code: "H", symbol: "♥", color: red }],
-    ["D", { code: "D", symbol: "♦", color: red }],
-    ["C", { code: "C", symbol: "♣" }],
-  ]);
-  return suits.get(suit) ?? { code: suit, symbol: suit };
+  return SUIT_FORMATS.get(suit) ?? { code: suit, symbol: suit };
 }
 
 function countRanks(values) {

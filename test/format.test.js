@@ -1,15 +1,8 @@
 import { strict as assert } from "node:assert/strict";
 import { test } from "node:test";
 
-import { formatHand, formatVisualHand } from "../src/game.js";
+import { formatVisualHand } from "../src/game.js";
 
-test("formatHand returns exact numbered card string", () => {
-  const result = formatHand([
-    { rank: "A", suit: "S" },
-    { rank: "10", suit: "H" },
-  ]);
-  assert.equal(result, "1:AS  2:10H");
-});
 
 test("formatVisualHand includes card borders", () => {
   const output = formatVisualHand([{ rank: "A", suit: "S" }]);

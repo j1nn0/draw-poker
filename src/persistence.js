@@ -5,6 +5,7 @@ import { join } from "node:path";
 const DATA_DIR = process.env.DRAW_POKER_DATA_DIR || join(homedir(), ".draw-poker");
 const CREDITS_FILE = join(DATA_DIR, "credits.json");
 const HIGHSCORES_FILE = join(DATA_DIR, "highscores.json");
+const ACHIEVEMENTS_FILE = join(DATA_DIR, "achievements.json");
 
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) {
@@ -59,4 +60,18 @@ export function loadHighScores() {
 export function saveHighScores(highScores) {
   ensureDataDir();
   writeFileSync(HIGHSCORES_FILE, JSON.stringify(highScores, null, 2));
+}
+
+export function loadAchievements() {
+  try {
+    const data = readFileSync(ACHIEVEMENTS_FILE, "utf8");
+    return JSON.parse(data);
+  } catch {
+    return { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 };
+  }
+}
+
+export function saveAchievements(achievementState) {
+  ensureDataDir();
+  writeFileSync(ACHIEVEMENTS_FILE, JSON.stringify(achievementState, null, 2));
 }

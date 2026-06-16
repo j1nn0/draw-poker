@@ -8,7 +8,7 @@ import { join } from "node:path";
 const tempDir = mkdtempSync(join(tmpdir(), "draw-poker-test-"));
 process.env.DRAW_POKER_DATA_DIR = tempDir;
 
-const { loadCredits, saveCredits, loadHighScores, saveHighScores } = await import("../src/persistence.js");
+const { loadCredits, saveCredits, loadHighScores, saveHighScores, loadAchievements, saveAchievements } = await import("../src/persistence.js");
 
 test("loadCredits returns default 100 when file missing", () => {
   const credits = loadCredits();
@@ -49,6 +49,22 @@ test("saveHighScores and loadHighScores round-trip", () => {
   saveHighScores(scores);
   const loaded = loadHighScores();
   assert.deepEqual(loaded, scores);
+});
+
+test("loadAchievements returns defaults when file missing", () => {
+  const data = loadAchievements();
+  assert.deepEqual(data, { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 });
+});
+
+test("saveAchievements and loadAchievements round-trip", () => {
+  const state = {
+    unlocked: { first_pair: "2026-06-16T00:00:00.000Z" },
+    handTypesAchieved: ["Pair", "Flush"],
+    totalDoubleUps: 5,
+  };
+  saveAchievements(state);
+  const loaded = loadAchievements();
+  assert.deepEqual(loaded, state);
 });
 
 after(() => {
