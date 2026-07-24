@@ -23,8 +23,8 @@
 ## Implementation Notes
 - Keep the app dependency-free unless the user explicitly asks otherwise; current code uses only Node built-ins.
 - `shuffleDeck(deck, random = Math.random)` accepts an injectable RNG, so prefer deterministic tests through that hook instead of mocking globals.
-- `evaluateHand()` ranks hands from `High Card` rank `0` through `Royal Flush` rank `9` and handles the ace-low straight wheel. Any pair returns `Pair` (rank 1) — Dragon Quest casino rules, no Jacks-or-Better distinction.
-- `getPayTable()` returns an object mapping hand names to bet-specific payout arrays (index 0 unused, indexes 1-10 for bet amounts 1-10). `calculatePayout(handName, bet = 1)` returns the payout for a given hand name and bet amount (throws on unknown hand names). Pay table follows Dragon Quest casino poker values: Royal Flush base 500×, max bet bonus 8000 at 10 coins.
+- `evaluateHand()` ranks hands from `High Card` rank `0` through `Royal Flush` rank `9` and handles the ace-low straight wheel. Any pair returns `Pair` (rank 1), no Jacks-or-Better distinction.
+- `getPayTable()` returns an object mapping hand names to bet-specific payout arrays (index 0 unused, indexes 1-10 for bet amounts 1-10). `calculatePayout(handName, bet = 1)` returns the payout for a given hand name and bet amount (throws on unknown hand names). Pay table: Royal Flush base 500×, max bet bonus 8000 at 10 coins.
 - `drawDoubleUpCards(deck)` returns a dealer card and 4 player cards for the double-up mini-game. `playDoubleUp(dealerCard, playerCard)` returns `"win"`, `"lose"`, or `"push"` (was boolean before 2026-06-12). On a tie, the payout is preserved and the player can try again.
 - `formatCardLines(card)` is exported for reuse in cli.js double-up card art. Hearts and diamonds are colored red via ANSI `\x1b[31m` codes. `formatVisualHand()` uses Japanese labels ("交換" / "残す") instead of "CHANGE" / "KEEP".
 - `localizeHandName(name)` in cli.js maps English hand names to Japanese (e.g. "Royal Flush" → "ロイヤルストレートフラッシュ").
