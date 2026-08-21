@@ -2,6 +2,7 @@
 import { emitKeypressEvents } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { pathToFileURL } from "node:url";
 
 import {
   createDeck,
@@ -519,7 +520,7 @@ function selectDoubleUpCard(dealerCard, playerCards) {
 }
 
 
-function localizeHandName(name) {
+export function localizeHandName(name) {
   const names = {
     "Royal Flush": "ロイヤルストレートフラッシュ",
     "Straight Flush": "ストレートフラッシュ",
@@ -535,7 +536,7 @@ function localizeHandName(name) {
   return names[name] || name;
 }
 
-function displayWidth(str) {
+export function displayWidth(str) {
   let w = 0;
   const visibleStr = str.replace(/\x1b\[[0-9;]*m/g, "");
   for (const char of visibleStr) {
@@ -544,19 +545,19 @@ function displayWidth(str) {
   return w;
 }
 
-function formatBoxRow(content, innerWidth) {
+export function formatBoxRow(content, innerWidth) {
   const padding = Math.max(0, innerWidth - displayWidth(content));
   return `║${content}${" ".repeat(padding)}║`;
 }
 
-function centerBoxText(text, innerWidth) {
+export function centerBoxText(text, innerWidth) {
   const textWidth = displayWidth(text);
   const leftPadding = Math.max(0, Math.floor((innerWidth - textWidth) / 2));
   const rightPadding = Math.max(0, innerWidth - textWidth - leftPadding);
   return `${" ".repeat(leftPadding)}${text}${" ".repeat(rightPadding)}`;
 }
 
-function truncateDisplayWidth(str, maxWidth) {
+export function truncateDisplayWidth(str, maxWidth) {
   const text = String(str);
   if (maxWidth <= 0) return "";
   if (displayWidth(text) <= maxWidth) return text;
@@ -574,7 +575,7 @@ function truncateDisplayWidth(str, maxWidth) {
   return `${result}${maxWidth >= displayWidth(ellipsis) ? ellipsis : ""}`;
 }
 
-function showPayTable() {
+export function showPayTable() {
   const payTable = getPayTable();
   const HAND_ORDER = [
     "Royal Flush", "Straight Flush", "Four of a Kind", "Full House",
@@ -600,7 +601,7 @@ function showPayTable() {
   output.write(`╚${SEP}╝\n\n`);
 }
 
-function progressBar(current, total, width = 10) {
+export function progressBar(current, total, width = 10) {
   const barWidth = Number.isFinite(width) ? Math.max(0, Math.floor(width)) : 0;
   const safeCurrent = Number.isFinite(current) ? current : 0;
   const safeTotal = Number.isFinite(total) ? total : 0;
@@ -620,7 +621,7 @@ function progressBar(current, total, width = 10) {
   return `${color}${"█".repeat(filled)}\x1b[0m${"░".repeat(empty)}`;
 }
 
-function showAchievements() {
+export function showAchievements() {
   const progress = getAchievementProgress();
   const categories = getCategoryProgress();
   const total = getTotalUnlocked();
@@ -680,15 +681,15 @@ function showAchievements() {
   output.write(`╚${SEP}╝\n\n`);
 }
 
-function formatCard(card) {
+export function formatCard(card) {
   return `${card.rank}${card.suit}`;
 }
 
-function renderCardFaceDown() {
+export function renderCardFaceDown() {
   return ["+-----+", "|?????|", "|  ?  |", "|?????|", "+-----+"];
 }
 
-function renderCardsRow(cards, faceDownIndexes) {
+export function renderCardsRow(cards, faceDownIndexes) {
   const faceDownSet = new Set(faceDownIndexes);
   const allLines = cards.map((card, i) =>
     faceDownSet.has(i) ? renderCardFaceDown() : formatCardLines(card),
@@ -698,19 +699,21 @@ function renderCardsRow(cards, faceDownIndexes) {
   ).join("\n");
 }
 
-function renderTwoCards(card1, card2) {
+export function renderTwoCards(card1, card2) {
   const lines1 = formatCardLines(card1);
   const lines2 = formatCardLines(card2);
   return lines1.map((line, i) => `${line}  ${lines2[i]}`).join("\n");
 }
 
-function renderCardLabels(count) {
+export function renderCardLabels(count) {
   return Array.from({ length: count }, (_, i) =>
     `${i + 1}`.padStart(3).padEnd(7),
   ).join(" ");
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}
