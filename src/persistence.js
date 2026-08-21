@@ -65,7 +65,28 @@ export function saveHighScores(highScores) {
 export function loadAchievements() {
   try {
     const data = readFileSync(ACHIEVEMENTS_FILE, "utf8");
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 };
+    }
+    const unlocked =
+      parsed.unlocked !== null &&
+      typeof parsed.unlocked === "object" &&
+      !Array.isArray(parsed.unlocked)
+        ? Object.fromEntries(
+            Object.entries(parsed.unlocked).filter(([, v]) => typeof v === "string"),
+          )
+        : {};
+    const handTypesAchieved = Array.isArray(parsed.handTypesAchieved)
+      ? parsed.handTypesAchieved.filter((h) => typeof h === "string")
+      : [];
+    const totalDoubleUps =
+      typeof parsed.totalDoubleUps === "number" &&
+      Number.isFinite(parsed.totalDoubleUps) &&
+      parsed.totalDoubleUps >= 0
+        ? Math.floor(parsed.totalDoubleUps)
+        : 0;
+    return { unlocked, handTypesAchieved, totalDoubleUps };
   } catch {
     return { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 };
   }
