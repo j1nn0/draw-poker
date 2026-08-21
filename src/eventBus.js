@@ -10,11 +10,27 @@ export function off(event, fn) {
   if (set) set.delete(fn);
 }
 
+export function clear(event) {
+  if (event) {
+    listeners.delete(event);
+  } else {
+    listeners.clear();
+  }
+}
+
+export function hasListeners(event) {
+  const set = listeners.get(event);
+  return !!set && set.size > 0;
+}
+
 export function emit(event, data) {
   const set = listeners.get(event);
-  if (set) {
-    for (const fn of set) {
+  if (!set) return;
+  for (const fn of [...set]) {
+    try {
       fn(data);
+    } catch (err) {
+      console.error(`eventBus: listener for "${event}" threw`, err);
     }
   }
 }
