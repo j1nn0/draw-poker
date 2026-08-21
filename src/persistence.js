@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -10,6 +17,22 @@ const ACHIEVEMENTS_FILE = join(DATA_DIR, "achievements.json");
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) {
     mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+function writeFileAtomically(filePath, contents) {
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+
+  try {
+    writeFileSync(tempPath, contents);
+    renameSync(tempPath, filePath);
+  } catch (error) {
+    try {
+      unlinkSync(tempPath);
+    } catch {
+      // Preserve the original write or rename error.
+    }
+    throw error;
   }
 }
 
@@ -28,7 +51,7 @@ export function loadCredits() {
 
 export function saveCredits(credits) {
   ensureDataDir();
-  writeFileSync(CREDITS_FILE, JSON.stringify({ credits }, null, 2));
+  writeFileAtomically(CREDITS_FILE, JSON.stringify({ credits }, null, 2));
 }
 
 const DEFAULT_HIGH_SCORES = {
@@ -59,7 +82,7 @@ export function loadHighScores() {
 
 export function saveHighScores(highScores) {
   ensureDataDir();
-  writeFileSync(HIGHSCORES_FILE, JSON.stringify(highScores, null, 2));
+  writeFileAtomically(HIGHSCORES_FILE, JSON.stringify(highScores, null, 2));
 }
 
 export function loadAchievements() {
@@ -94,5 +117,5 @@ export function loadAchievements() {
 
 export function saveAchievements(achievementState) {
   ensureDataDir();
-  writeFileSync(ACHIEVEMENTS_FILE, JSON.stringify(achievementState, null, 2));
+  writeFileAtomically(ACHIEVEMENTS_FILE, JSON.stringify(achievementState, null, 2));
 }
