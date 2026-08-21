@@ -67,6 +67,25 @@ test("accumulateStats works with empty session defaults", () => {
   assert.equal(updated.totalPayout, 100);
 });
 
+test("peak helpers preserve existing values with sparse session defaults", () => {
+  const current = {
+    maxCredits: 100,
+    bestHandRank: 5,
+    bestHandName: "Flush",
+    maxDoubleUps: 2,
+  };
+  const highScores = {
+    ...current,
+    totalGamesPlayed: 50,
+    totalGamesWon: 20,
+    totalBet: 500,
+    totalPayout: 800,
+  };
+
+  assert.deepEqual(updateHighScores(current, {}), current);
+  assert.deepEqual(mergeSessionResults(highScores, {}), highScores);
+});
+
 test("mergeSessionResults combines peak records and cumulative stats", () => {
   const highScores = {
     maxCredits: 100, bestHandRank: 5, bestHandName: "Flush", maxDoubleUps: 2,

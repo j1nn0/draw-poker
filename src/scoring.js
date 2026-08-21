@@ -1,12 +1,12 @@
 export function updateHighScores(current, session) {
   return {
-    maxCredits: Math.max(current.maxCredits, session.maxCreditReached),
-    bestHandRank: Math.max(current.bestHandRank, session.bestHandRank),
+    maxCredits: Math.max(current.maxCredits, session.maxCreditReached || 0),
+    bestHandRank: Math.max(current.bestHandRank, session.bestHandRank || 0),
     bestHandName:
-      session.bestHandRank > current.bestHandRank
+      (session.bestHandRank || 0) > current.bestHandRank
         ? session.bestHandName
         : current.bestHandName,
-    maxDoubleUps: Math.max(current.maxDoubleUps, session.maxDoubleUps),
+    maxDoubleUps: Math.max(current.maxDoubleUps, session.maxDoubleUps || 0),
   };
 }
 
