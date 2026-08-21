@@ -246,6 +246,8 @@ async function playDoubleUpLoop(rl, initialPayout) {
   let payout = initialPayout;
   let doubleUps = 0;
 
+  emit("doubleup:start", { currentPayout: payout });
+
   while (doubleUps < 5) {
     const answer = await rl.question("ダブルアップする？ [Enter=はい n=やめる]: ");
 
@@ -272,11 +274,14 @@ async function playDoubleUpLoop(rl, initialPayout) {
     if (result === "win") {
       payout *= 2;
       doubleUps += 1;
+      emit("doubleup:win", { newPayout: payout });
       output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 勝ち！配当: ${payout}\n`);
     } else if (result === "push") {
+      emit("doubleup:push", {});
       output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 引き分け！配当維持。もう1回！\n`);
     } else {
       payout = 0;
+      emit("doubleup:lose", {});
       output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 負け！配当はなくなった…\n`);
       break;
     }
