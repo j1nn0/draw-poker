@@ -10,7 +10,7 @@
     "start": "node ./src/cli.js",
     "test": "node --test",
     "coverage": "node --test --experimental-test-coverage",
-    "build": "node --check ./src/game.js && node --check ./src/cli.js"
+    "build": "node --check ./src/game.js && node --check ./src/cli.js && node --check ./src/persistence.js && node --check ./src/scoring.js && node --check ./src/achievements.js && node --check ./src/eventBus.js"
   },
   "engines": {
     "node": ">=22.0.0"

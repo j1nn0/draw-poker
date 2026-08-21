@@ -13,7 +13,7 @@
 - Install: `pnpm install`.
 - Run the game: `pnpm start`.
 - Run tests: `pnpm test` uses Node's built-in `node:test` runner, not Jest/Vitest.
-- Syntax check: `pnpm build` runs `node --check ./src/game.js && node --check ./src/cli.js`; it does not bundle or emit files.
+- Syntax check: `pnpm build` runs `node --check` against every file in `src/` (game.js, cli.js, persistence.js, scoring.js, achievements.js, eventBus.js); it does not bundle or emit files.
 
 - For logic changes in `src/game.js`, run `pnpm test` and `pnpm build`.
 - For CLI changes in `src/cli.js`, run `pnpm build` and manually exercise the quit path with `printf 'q\n' | pnpm start` (the game is TTY-only; piped input works only for the bet prompt).
