@@ -1,15 +1,18 @@
 # Repository Instructions
 
 ## Top Priority Rule
+
 - Always write responses to users in Japanese.
 
 ## Project Shape
+
 - This is a small dependency-free Node.js ESM CLI app, not a web app or TypeScript project.
 - Runtime entrypoint is `src/cli.js`; pure poker logic lives in `src/game.js`; rendering helpers live in `src/view.js`; persistence logic lives in `src/persistence.js`; scoring logic lives in `src/scoring.js`; achievement state lives in `src/achievements.js`; event bus lives in `src/eventBus.js`; tests live in `test/`.
 - `package.json` declares `"type": "module"`, so local imports need explicit `.js` extensions.
 - Use `pnpm` here. `packageManager` is pinned to `pnpm@10.34.3`; Node must be `>=22.0.0`.
 
 ## Commands
+
 - Install: `pnpm install`.
 - Run the game: `pnpm start`.
 - Run tests: `pnpm test` uses Node's built-in `node:test` runner, not Jest/Vitest.
@@ -21,6 +24,7 @@
 - The CLI is TTY-only for the interactive game; headless flags `--help`/`--version`/`--stats`/`--paytable`/`--achievements` are handled before the TTY check and work when stdin is not a TTY. Use `node src/cli.js --help` for headless; `pnpm start -- --help` forwards via pnpm.
 
 ## Implementation Notes
+
 - Keep the app dependency-free unless the user explicitly asks otherwise; current code uses only Node built-ins.
 - `shuffleDeck(deck, random = Math.random)` accepts an injectable RNG, so prefer deterministic tests through that hook instead of mocking globals.
 - `evaluateHand()` ranks hands from `High Card` rank `0` through `Royal Flush` rank `9` and handles the ace-low straight wheel. Any pair returns `Pair` (rank 1), no Jacks-or-Better distinction.

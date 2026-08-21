@@ -121,7 +121,7 @@ export const ACHIEVEMENTS = [
     name: "ダブルアップ初勝利",
     description: "ダブルアップに1回勝利",
     icon: "\u{1F3B2}",
-    condition: (ev, _st) => ev.type === "doubleup:win",
+    condition: (ev, _st) => ev?.type === "doubleup:win",
   },
   {
     id: "du_streak_3",
@@ -129,7 +129,7 @@ export const ACHIEVEMENTS = [
     name: "ダブルアップ3連勝",
     description: "1セッションで3連続成功",
     icon: "\u{1F3B2}",
-    condition: (ev, st) => ev.type === "doubleup:win" && st.doubleUpStreak >= 3,
+    condition: (ev, st) => ev?.type === "doubleup:win" && st.doubleUpStreak >= 3,
   },
   {
     id: "du_streak_5",
@@ -137,7 +137,7 @@ export const ACHIEVEMENTS = [
     name: "ダブルアップ5連勝",
     description: "1セッションで5連続成功（上限到達）",
     icon: "\u{1F3B2}",
-    condition: (ev, st) => ev.type === "doubleup:win" && st.doubleUpStreak >= 5,
+    condition: (ev, st) => ev?.type === "doubleup:win" && st.doubleUpStreak >= 5,
   },
   {
     id: "du_push_win",
@@ -146,7 +146,7 @@ export const ACHIEVEMENTS = [
     description: "ダブルアップでプッシュ後、次の挑戦で勝利",
     icon: "\u{1F3B2}",
     condition: (ev, st) =>
-      ev.type === "doubleup:win" && st.lastDoubleUpResult === "push",
+      ev?.type === "doubleup:win" && st.lastDoubleUpResult === "push",
   },
   {
     id: "du_total_10",
@@ -243,7 +243,7 @@ export const ACHIEVEMENTS = [
     description: "1枚も交換せずに配当を得る",
     icon: "\u{1F525}",
     condition: (ev, st) =>
-      ev.type === "hand:evaluated" &&
+      ev?.type === "hand:evaluated" &&
       st.lastExchangeCount === 0 &&
       st.currentHand &&
       st.currentHand.rank >= 1,
@@ -255,7 +255,7 @@ export const ACHIEVEMENTS = [
     description: "5枚すべて交換して配当を得る",
     icon: "\u{1F525}",
     condition: (ev, st) =>
-      ev.type === "hand:evaluated" &&
+      ev?.type === "hand:evaluated" &&
       st.lastExchangeCount === 5 &&
       st.currentHand &&
       st.currentHand.rank >= 1,
@@ -267,7 +267,7 @@ export const ACHIEVEMENTS = [
     description: "最大ベット(10)でペア以上を出して配当を得る",
     icon: "\u{1F525}",
     condition: (ev, st) =>
-      ev.type === "hand:evaluated" &&
+      ev?.type === "hand:evaluated" &&
       st.lastBet === 10 &&
       st.currentHand &&
       st.currentHand.rank >= 1,
@@ -279,7 +279,7 @@ export const ACHIEVEMENTS = [
     description: "最小ベット(1)でロイヤルフラッシュを達成",
     icon: "\u{1F525}",
     condition: (ev, st) =>
-      ev.type === "hand:evaluated" &&
+      ev?.type === "hand:evaluated" &&
       st.lastBet === 1 &&
       st.currentHand &&
       st.currentHand.name === "Royal Flush",
@@ -445,6 +445,9 @@ function checkAll() {
 function handleEvent(type, data, ...handlers) {
   lastEvent = { type, ...data };
   for (const handler of handlers) handler(data);
+  if (lastEvent === null) {
+    lastEvent = { type, ...data };
+  }
   checkAll();
   if (type === "doubleup:win") {
     state.lastDoubleUpResult = "win";

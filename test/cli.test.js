@@ -328,7 +328,10 @@ test("renderTwoCards joins two cards side by side", () => {
 });
 
 test("renderTwoCards preserves hearts red coloring", () => {
-  const result = renderTwoCards({ rank: "A", suit: "H" }, { rank: "K", suit: "D" });
+  const result = renderTwoCards(
+    { rank: "A", suit: "H" },
+    { rank: "K", suit: "D" },
+  );
   // should contain ANSI red code for hearts/diamonds
   assert.match(result, /\x1b\[31m/);
 });
@@ -359,7 +362,14 @@ test("renderCardLabels with 1 returns single label", () => {
 
 // ── parseArgs ──────────────────────────────────────────────────────────
 test("parseArgs returns all false for empty argv", () => {
-  assert.deepEqual(parseArgs([]), { help: false, version: false, stats: false, paytable: false, achievements: false, unknown: null });
+  assert.deepEqual(parseArgs([]), {
+    help: false,
+    version: false,
+    stats: false,
+    paytable: false,
+    achievements: false,
+    unknown: null,
+  });
 });
 
 test("parseArgs handles --help and -h", () => {
@@ -428,7 +438,12 @@ test("buildStatsOutput contains highScores and credits", () => {
     totalPayout: 800,
   };
   const progress = Array.from({ length: 30 }, (_, i) => ({ id: `${i}` }));
-  const out = buildStatsOutput({ highScores, credits: 999, progress, total: 7 });
+  const out = buildStatsOutput({
+    highScores,
+    credits: 999,
+    progress,
+    total: 7,
+  });
   assert.match(out, /コイン: 999/);
   assert.match(out, /最高コイン: 1234/);
   assert.match(out, /ロイヤルストレートフラッシュ/);
@@ -440,28 +455,45 @@ test("buildStatsOutput contains highScores and credits", () => {
 
 test("buildStatsOutput handles negative net", () => {
   const highScores = {
-    maxCredits: 0, bestHandRank: 0, bestHandName: "N/A", maxDoubleUps: 0,
-    totalGamesPlayed: 1, totalGamesWon: 0, totalBet: 100, totalPayout: 10,
+    maxCredits: 0,
+    bestHandRank: 0,
+    bestHandName: "N/A",
+    maxDoubleUps: 0,
+    totalGamesPlayed: 1,
+    totalGamesWon: 0,
+    totalBet: 100,
+    totalPayout: 10,
   };
-  const out = buildStatsOutput({ highScores, credits: 0, progress: [], total: 0 });
+  const out = buildStatsOutput({
+    highScores,
+    credits: 0,
+    progress: [],
+    total: 0,
+  });
   assert.match(out, /通算収支: -90/);
 });
 
 // ── spawn integration: headless flags work piped ───────────────────────
 test("spawn --help outputs help and exits 0", () => {
-  const r = spawnSync(process.execPath, ["src/cli.js", "--help"], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, ["src/cli.js", "--help"], {
+    encoding: "utf8",
+  });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /使い方/);
 });
 
 test("spawn --version outputs version", () => {
-  const r = spawnSync(process.execPath, ["src/cli.js", "--version"], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, ["src/cli.js", "--version"], {
+    encoding: "utf8",
+  });
   assert.equal(r.status, 0);
   assert.match(r.stdout.trim(), /^\d+\.\d+\.\d+/);
 });
 
 test("spawn --paytable outputs paytable", () => {
-  const r = spawnSync(process.execPath, ["src/cli.js", "--paytable"], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, ["src/cli.js", "--paytable"], {
+    encoding: "utf8",
+  });
   assert.equal(r.status, 0);
   assert.match(r.stdout, /ペイテーブル/);
 });
@@ -496,7 +528,9 @@ test("spawn --achievements outputs achievements", () => {
 });
 
 test("spawn unknown flag exits 1 and shows help", () => {
-  const r = spawnSync(process.execPath, ["src/cli.js", "--unknown"], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, ["src/cli.js", "--unknown"], {
+    encoding: "utf8",
+  });
   assert.equal(r.status, 1);
   assert.match(r.stdout, /不明なオプション/);
   assert.match(r.stdout, /使い方/);

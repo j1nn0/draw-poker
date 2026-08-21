@@ -18,10 +18,23 @@ import {
   getHeldIndexes,
   shuffleDeck,
 } from "./game.js";
-import { loadCredits, saveCredits, loadHighScores, saveHighScores, loadAchievements, saveAchievements } from "./persistence.js";
+import {
+  loadCredits,
+  saveCredits,
+  loadHighScores,
+  saveHighScores,
+  loadAchievements,
+  saveAchievements,
+} from "./persistence.js";
 import { mergeSessionResults, detectNewRecords } from "./scoring.js";
 import { emit, on } from "./eventBus.js";
-import { initAchievements, getAchievementProgress, getCategoryProgress, getTotalUnlocked, getAchievementState } from "./achievements.js";
+import {
+  initAchievements,
+  getAchievementProgress,
+  getCategoryProgress,
+  getTotalUnlocked,
+  getAchievementState,
+} from "./achievements.js";
 import {
   displayWidth,
   formatBoxRow,
@@ -41,15 +54,28 @@ import {
 } from "./view.js";
 
 export function parseArgs(argv) {
-  const flags = { help: false, version: false, stats: false, paytable: false, achievements: false, unknown: null };
+  const flags = {
+    help: false,
+    version: false,
+    stats: false,
+    paytable: false,
+    achievements: false,
+    unknown: null,
+  };
   for (const arg of argv) {
     if (arg === "--help" || arg === "-h") flags.help = true;
     else if (arg === "--version" || arg === "-v") flags.version = true;
     else if (arg === "--stats") flags.stats = true;
     else if (arg === "--paytable" || arg === "-p") flags.paytable = true;
-    else if (arg === "--achievements" || arg === "-a") flags.achievements = true;
-    else if (arg.startsWith("-")) { flags.unknown = arg; break; }
-    else { flags.unknown = arg; break; }
+    else if (arg === "--achievements" || arg === "-a")
+      flags.achievements = true;
+    else if (arg.startsWith("-")) {
+      flags.unknown = arg;
+      break;
+    } else {
+      flags.unknown = arg;
+      break;
+    }
   }
   return flags;
 }
@@ -98,7 +124,9 @@ async function main() {
     initAchievements(highScores, achievementsData);
     const progress = getAchievementProgress();
     const total = getTotalUnlocked();
-    output.write(`${buildStatsOutput({ highScores, credits, progress, total })}\n`);
+    output.write(
+      `${buildStatsOutput({ highScores, credits, progress, total })}\n`,
+    );
     return;
   }
 
@@ -138,7 +166,19 @@ async function main() {
     while (true) {
       // --- Game over check ---
       if (credits <= 0) {
-        const result = await handleGameOver(rl, { gamesPlayed, gamesWon, bestHand, maxDoubleUps, maxCreditReached, totalBet, totalPayout }, highScores);
+        const result = await handleGameOver(
+          rl,
+          {
+            gamesPlayed,
+            gamesWon,
+            bestHand,
+            maxDoubleUps,
+            maxCreditReached,
+            totalBet,
+            totalPayout,
+          },
+          highScores,
+        );
         if (!result.doContinue) break;
         credits = result.credits;
         saveCredits(credits);
@@ -166,14 +206,20 @@ async function main() {
       }
 
       // --- Payout & double-up ---
-      const payoutResult = await handlePayout(rl, drawResult, betResult.bet, credits);
+      const payoutResult = await handlePayout(
+        rl,
+        drawResult,
+        betResult.bet,
+        credits,
+      );
       credits = payoutResult.credits;
       totalPayout += payoutResult.payout;
       maxCreditReached = Math.max(maxCreditReached, credits);
       gamesPlayed += 1;
       if (payoutResult.payout > 0) gamesWon += 1;
       maxDoubleUps = Math.max(maxDoubleUps, payoutResult.doubleUps);
-      if (!bestHand || drawResult.result.rank > bestHand.rank) bestHand = drawResult.result;
+      if (!bestHand || drawResult.result.rank > bestHand.rank)
+        bestHand = drawResult.result;
 
       // --- Continue prompt ---
       const continueAnswer = await rl.question("Enterで続ける、qで終了: ");
@@ -181,10 +227,20 @@ async function main() {
       output.write("\n");
     }
   } finally {
-    endSession(rl, {
-      credits, gamesPlayed, gamesWon, totalBet, totalPayout,
-      maxCreditReached, bestHand, maxDoubleUps,
-    }, highScores);
+    endSession(
+      rl,
+      {
+        credits,
+        gamesPlayed,
+        gamesWon,
+        totalBet,
+        totalPayout,
+        maxCreditReached,
+        bestHand,
+        maxDoubleUps,
+      },
+      highScores,
+    );
   }
 }
 
@@ -195,7 +251,11 @@ async function handleBet(rl, credits, lastBet) {
   const betResult = await getBet(rl, maxBet, lastBet);
   if (betResult === null) return null;
   const { bet } = betResult;
-  emit("bet:placed", { bet, creditsBefore: credits, creditsAfter: credits - bet });
+  emit("bet:placed", {
+    bet,
+    creditsBefore: credits,
+    creditsAfter: credits - bet,
+  });
   return { bet, credits: credits - bet, lastBet: bet };
 }
 
@@ -232,7 +292,13 @@ async function handlePayout(rl, drawResult, bet, credits) {
   const prevCredits = credits;
   credits += payout;
 
-  emit("hand:end", { bet, payout, handResult: drawResult.result, doubleUps: currentDoubleUps, creditsAfter: credits });
+  emit("hand:end", {
+    bet,
+    payout,
+    handResult: drawResult.result,
+    doubleUps: currentDoubleUps,
+    creditsAfter: credits,
+  });
 
   if (credits !== prevCredits) {
     try {
@@ -276,11 +342,15 @@ async function handleGameOver(rl, stats, highScores) {
   output.write(`╚${SEP}╝\n\n`);
   output.write(`プレイ回数: ${stats.gamesPlayed}\n`);
   output.write(`勝利回数: ${stats.gamesWon}\n`);
-  output.write(`最高役: ${stats.bestHand ? localizeHandName(stats.bestHand.name) : "N/A"}\n`);
+  output.write(
+    `最高役: ${stats.bestHand ? localizeHandName(stats.bestHand.name) : "N/A"}\n`,
+  );
   output.write(`最大ダブルアップ: ${stats.maxDoubleUps}\n\n`);
   output.write("歴代記録:\n");
   output.write(`  最高コイン: ${updatedHighScores.maxCredits}\n`);
-  output.write(`  最高役: ${localizeHandName(updatedHighScores.bestHandName)}\n`);
+  output.write(
+    `  最高役: ${localizeHandName(updatedHighScores.bestHandName)}\n`,
+  );
   output.write(`  最大ダブルアップ: ${updatedHighScores.maxDoubleUps}\n\n`);
 
   const answer = await rl.question("100コインで続ける？ (y/n): ");
@@ -294,7 +364,9 @@ async function getBet(rl, maxBet, lastBet) {
   let bet = 0;
 
   while (bet < 1 || bet > maxBet) {
-    const answer = await rl.question(`ベット (1-${maxBet}) [${lastBet}] (pで配当表表示、aで実績一覧): `);
+    const answer = await rl.question(
+      `ベット (1-${maxBet}) [${lastBet}] (pで配当表表示、aで実績一覧): `,
+    );
 
     if (answer.trim().toLowerCase() === "q") return null;
     if (answer.trim().toLowerCase() === "p") {
@@ -310,12 +382,12 @@ async function getBet(rl, maxBet, lastBet) {
 
     if (trimmed === "") {
       bet = lastBet;
-    } else if (!/^\d+$/.test(trimmed)) {
+    } else if (/^\d+$/.test(trimmed)) {
+      bet = parseInt(trimmed, 10);
+    } else {
       output.write("整数で入力してね。\n");
       bet = 0;
       continue;
-    } else {
-      bet = parseInt(trimmed, 10);
     }
 
     if (bet < 1 || bet > maxBet) {
@@ -334,7 +406,9 @@ async function playDoubleUpLoop(rl, initialPayout) {
   emit("doubleup:start", { currentPayout: payout });
 
   while (doubleUps < 5) {
-    const answer = await rl.question("ダブルアップする？ [Enter=はい n=やめる]: ");
+    const answer = await rl.question(
+      "ダブルアップする？ [Enter=はい n=やめる]: ",
+    );
 
     if (answer.trim().toLowerCase() === "n") break;
 
@@ -360,14 +434,20 @@ async function playDoubleUpLoop(rl, initialPayout) {
       payout *= 2;
       doubleUps += 1;
       emit("doubleup:win", { newPayout: payout });
-      output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 勝ち！配当: ${payout}\n`);
+      output.write(
+        `ディーラー ${dealerStr}  VS  あなた ${playerStr} → 勝ち！配当: ${payout}\n`,
+      );
     } else if (result === "push") {
       emit("doubleup:push", {});
-      output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 引き分け！配当維持。もう1回！\n`);
+      output.write(
+        `ディーラー ${dealerStr}  VS  あなた ${playerStr} → 引き分け！配当維持。もう1回！\n`,
+      );
     } else {
       payout = 0;
       emit("doubleup:lose", {});
-      output.write(`ディーラー ${dealerStr}  VS  あなた ${playerStr} → 負け！配当はなくなった…\n`);
+      output.write(
+        `ディーラー ${dealerStr}  VS  あなた ${playerStr} → 負け！配当はなくなった…\n`,
+      );
       break;
     }
   }
@@ -377,8 +457,14 @@ async function playDoubleUpLoop(rl, initialPayout) {
 
 function endSession(rl, state, highScores) {
   const {
-    credits, gamesPlayed, gamesWon, totalBet, totalPayout,
-    maxCreditReached, bestHand, maxDoubleUps,
+    credits,
+    gamesPlayed,
+    gamesWon,
+    totalBet,
+    totalPayout,
+    maxCreditReached,
+    bestHand,
+    maxDoubleUps,
   } = state;
 
   const sessionStats = {
@@ -414,11 +500,17 @@ function endSession(rl, state, highScores) {
 
   const netProfit = totalPayout - totalBet;
   output.write(`収支: ${netProfit >= 0 ? "+" : ""}${netProfit}\n`);
-  output.write(`最高役: ${bestHand ? localizeHandName(bestHand.name) : "N/A"}\n`);
+  output.write(
+    `最高役: ${bestHand ? localizeHandName(bestHand.name) : "N/A"}\n`,
+  );
   output.write(`最大ダブルアップ: ${maxDoubleUps}\n`);
   output.write(`最終コイン: ${credits}\n`);
 
-  const sessionPeak = { maxCreditReached, bestHandRank: bestHand ? bestHand.rank : 0, maxDoubleUps };
+  const sessionPeak = {
+    maxCreditReached,
+    bestHandRank: bestHand ? bestHand.rank : 0,
+    maxDoubleUps,
+  };
   const newRecords = detectNewRecords(highScores, sessionPeak);
 
   if (newRecords.length > 0) {
@@ -433,7 +525,9 @@ function endSession(rl, state, highScores) {
 
   output.write(`\n歴代記録:\n`);
   output.write(`  最高コイン: ${updatedHighScores.maxCredits}\n`);
-  output.write(`  最高役: ${localizeHandName(updatedHighScores.bestHandName)}\n`);
+  output.write(
+    `  最高役: ${localizeHandName(updatedHighScores.bestHandName)}\n`,
+  );
   output.write(`  最大ダブルアップ: ${updatedHighScores.maxDoubleUps}\n`);
   rl.close();
 }
@@ -448,8 +542,12 @@ function selectExchangeCards(hand) {
     const render = () => {
       output.write("\x1b[2J\x1b[H");
       output.write("ドローポーカー\n");
-      output.write("←/→選択  1-5切替  Space切替  a全部交換  k全部キープ  Enter決定  q終了\n\n");
-      output.write(`${formatVisualHand(hand, selectedIndex, exchangeIndexes)}\n`);
+      output.write(
+        "←/→選択  1-5切替  Space切替  a全部交換  k全部キープ  Enter決定  q終了\n\n",
+      );
+      output.write(
+        `${formatVisualHand(hand, selectedIndex, exchangeIndexes)}\n`,
+      );
       output.write(`現在の役: ${localizeHandName(initialEval.name)}\n`);
     };
 
@@ -541,9 +639,9 @@ function selectDoubleUpCard(dealerCard, playerCards) {
       output.write("ディーラー:\n");
       output.write(`${formatCardLines(dealerCard).join("\n")}\n\n`);
       output.write("←/→選択  1-4で直接選択  Enter決定  q終了\n\n");
-      const cursorLine = playerCards.map((_, i) =>
-        i === selectedIndex ? "   v   " : "       ",
-      ).join(" ");
+      const cursorLine = playerCards
+        .map((_, i) => (i === selectedIndex ? "   v   " : "       "))
+        .join(" ");
       output.write(`${cursorLine}\n`);
       output.write(`${renderCardsRow(playerCards, [0, 1, 2, 3])}\n`);
       output.write(`${renderCardLabels(4)}\n`);
@@ -595,7 +693,6 @@ function selectDoubleUpCard(dealerCard, playerCards) {
   });
 }
 
-
 export function showPayTable() {
   output.write(buildPayTableText());
 }
@@ -624,7 +721,10 @@ export {
   buildStatsOutput,
 };
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (
+  process.argv[1] &&
+  pathToFileURL(process.argv[1]).href === import.meta.url
+) {
   main().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

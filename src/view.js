@@ -6,11 +6,11 @@ export function localizeHandName(name) {
     "Straight Flush": "ストレートフラッシュ",
     "Four of a Kind": "フォーカード",
     "Full House": "フルハウス",
-    "Flush": "フラッシュ",
-    "Straight": "ストレート",
+    Flush: "フラッシュ",
+    Straight: "ストレート",
     "Three of a Kind": "スリーカード",
     "Two Pair": "ツーペア",
-    "Pair": "ワンペア",
+    Pair: "ワンペア",
     "High Card": "ハイカード",
   };
   return names[name] || name;
@@ -20,7 +20,7 @@ export function displayWidth(str) {
   let w = 0;
   const visibleStr = str.replace(/\x1b\[[0-9;]*m/g, "");
   for (const char of visibleStr) {
-    w += char.charCodeAt(0) > 0x7F ? 2 : 1;
+    w += char.charCodeAt(0) > 0x7f ? 2 : 1;
   }
   return w;
 }
@@ -88,9 +88,9 @@ export function renderCardsRow(cards, faceDownIndexes) {
   const allLines = cards.map((card, i) =>
     faceDownSet.has(i) ? renderCardFaceDown() : formatCardLines(card),
   );
-  return [0, 1, 2, 3, 4].map((lineIdx) =>
-    allLines.map((cardLines) => cardLines[lineIdx]).join(" "),
-  ).join("\n");
+  return [0, 1, 2, 3, 4]
+    .map((lineIdx) => allLines.map((cardLines) => cardLines[lineIdx]).join(" "))
+    .join("\n");
 }
 
 export function renderTwoCards(card1, card2) {
@@ -108,15 +108,24 @@ export function renderCardLabels(count) {
 export function buildPayTableText() {
   const payTable = getPayTable();
   const HAND_ORDER = [
-    "Royal Flush", "Straight Flush", "Four of a Kind", "Full House",
-    "Flush", "Straight", "Three of a Kind", "Two Pair", "Pair",
+    "Royal Flush",
+    "Straight Flush",
+    "Four of a Kind",
+    "Full House",
+    "Flush",
+    "Straight",
+    "Three of a Kind",
+    "Two Pair",
+    "Pair",
   ];
   const SEP = "═".repeat(46);
   const lines = [];
   lines.push(`\n╔${SEP}╗`);
   lines.push(`║${" ".repeat(17)}ペイテーブル${" ".repeat(17)}║`);
   lines.push(`╠${SEP}╣`);
-  lines.push(`║ 役${" ".repeat(28)}${"1×".padStart(4)}${"5×".padStart(6)}${"10×".padStart(5)}║`);
+  lines.push(
+    `║ 役${" ".repeat(28)}${"1×".padStart(4)}${"5×".padStart(6)}${"10×".padStart(5)}║`,
+  );
   lines.push(`╠${SEP}╣`);
   for (const handName of HAND_ORDER) {
     const jpName = localizeHandName(handName);
@@ -138,10 +147,19 @@ export function buildAchievementsText(progress, categories, total) {
   lines.push(`\n╔${SEP}╗`);
   const title = `実績一覧 (${total}/${progress.length})`;
   lines.push(`${formatBoxRow(centerBoxText(title, BOX_WIDTH), BOX_WIDTH)}`);
-  const categoryOrder = ["hand", "doubleup", "cumulative", "milestone", "challenge"];
+  const categoryOrder = [
+    "hand",
+    "doubleup",
+    "cumulative",
+    "milestone",
+    "challenge",
+  ];
   const catLabels = {
-    hand: "ハンド系", doubleup: "ダブルアップ系", cumulative: "累計系",
-    milestone: "マイルストーン系", challenge: "チャレンジ系",
+    hand: "ハンド系",
+    doubleup: "ダブルアップ系",
+    cumulative: "累計系",
+    milestone: "マイルストーン系",
+    challenge: "チャレンジ系",
   };
   for (const catId of categoryOrder) {
     const cat = categories[catId];
@@ -164,9 +182,13 @@ export function buildAchievementsText(progress, categories, total) {
         const descriptionSuffix = ")";
         const descriptionWidth = Math.max(
           0,
-          CONTENT_WIDTH - displayWidth(name + descriptionPrefix + descriptionSuffix),
+          CONTENT_WIDTH -
+            displayWidth(name + descriptionPrefix + descriptionSuffix),
         );
-        const description = truncateDisplayWidth(ach.description, descriptionWidth);
+        const description = truncateDisplayWidth(
+          ach.description,
+          descriptionWidth,
+        );
         suffix = `${descriptionPrefix}${description}${descriptionSuffix}`;
       }
       const line = `${name}${suffix}`;
