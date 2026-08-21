@@ -3,6 +3,7 @@ import { emitKeypressEvents } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { pathToFileURL } from "node:url";
+import { readFileSync } from "node:fs";
 
 import {
   createDeck,
@@ -23,9 +24,111 @@ import { mergeSessionResults, detectNewRecords } from "./scoring.js";
 import { emit, on } from "./eventBus.js";
 import { initAchievements, getAchievementProgress, getCategoryProgress, getTotalUnlocked, getAchievementState } from "./achievements.js";
 
+export function parseArgs(argv) {
+  const flags = { help: false, version: false, stats: false, paytable: false, achievements: false, unknown: null };
+  for (const arg of argv) {
+    if (arg === "--help" || arg === "-h") flags.help = true;
+    else if (arg === "--version" || arg === "-v") flags.version = true;
+    else if (arg === "--stats") flags.stats = true;
+    else if (arg === "--paytable" || arg === "-p") flags.paytable = true;
+    else if (arg === "--achievements" || arg === "-a") flags.achievements = true;
+    else if (arg.startsWith("-")) { flags.unknown = arg; break; }
+    else { flags.unknown = arg; break; }
+  }
+  return flags;
+}
 
+export function getVersion() {
+  try {
+    const url = new URL("../package.json", import.meta.url);
+    const data = readFileSync(url, "utf8");
+    const pkg = JSON.parse(data);
+    if (typeof pkg.version === "string") return pkg.version;
+  } catch {}
+  return "0.1.0";
+}
+
+export function buildHelpText() {
+  const lines = [
+    "使い方: draw-poker [オプション]",
+    "",
+    "オプション:",
+    "  -h, --help          ヘルプを表示",
+    "  -v, --version       バージョンを表示",
+    "      --stats         累計統計と歴代記録を表示",
+    "  -p, --paytable      ペイテーブルを表示",
+    "  -a, --achievements  実績一覧を表示",
+    "",
+    "ゲーム操作:",
+    "  ←/→  カード選択  Space 交換切替  1-5 直接切替  a 全部交換  k 全部キープ  Enter 決定  q 終了",
+    "  ダブルアップ: ←/→ 選択  1-4 直接選択  Enter 決定  q 終了",
+    "",
+    "データ保存: ~/.draw-poker/ (環境変数 DRAW_POKER_DATA_DIR で変更可)",
+  ];
+  return lines.join("\n");
+}
+
+export function buildStatsOutput({ highScores, credits, progress, total }) {
+  const lines = [];
+  lines.push("=== draw-poker 統計 ===");
+  lines.push("");
+  lines.push(`コイン: ${credits}`);
+  lines.push("");
+  lines.push("歴代記録:");
+  lines.push(`  最高コイン: ${highScores.maxCredits}`);
+  lines.push(`  最高役: ${localizeHandName(highScores.bestHandName)}`);
+  lines.push(`  最大ダブルアップ: ${highScores.maxDoubleUps}`);
+  lines.push("");
+  lines.push("累計:");
+  lines.push(`  通算プレイ回数: ${highScores.totalGamesPlayed}`);
+  lines.push(`  通算勝利回数: ${highScores.totalGamesWon}`);
+  const net = highScores.totalPayout - highScores.totalBet;
+  lines.push(`  通算収支: ${net >= 0 ? "+" : ""}${net}`);
+  lines.push(`  総ベット: ${highScores.totalBet}`);
+  lines.push(`  総配当: ${highScores.totalPayout}`);
+  lines.push("");
+  lines.push(`実績: ${total}/${progress.length}`);
+  return lines.join("\n");
+}
 
 async function main() {
+  const flags = parseArgs(process.argv.slice(2));
+  if (flags.unknown) {
+    output.write(`不明なオプション: ${flags.unknown}\n`);
+    output.write(`${buildHelpText()}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  if (flags.help) {
+    output.write(`${buildHelpText()}\n`);
+    return;
+  }
+  if (flags.version) {
+    output.write(`${getVersion()}\n`);
+    return;
+  }
+  if (flags.paytable) {
+    showPayTable();
+    return;
+  }
+  if (flags.achievements) {
+    const highScores = loadHighScores();
+    const achievementsData = loadAchievements();
+    initAchievements(highScores, achievementsData);
+    showAchievements();
+    return;
+  }
+  if (flags.stats) {
+    const highScores = loadHighScores();
+    const credits = loadCredits();
+    const achievementsData = loadAchievements();
+    initAchievements(highScores, achievementsData);
+    const progress = getAchievementProgress();
+    const total = getTotalUnlocked();
+    output.write(`${buildStatsOutput({ highScores, credits, progress, total })}\n`);
+    return;
+  }
+
   if (!input.isTTY) {
     output.write("このゲームは対話型ターミナルが必要です。\n");
     return;
@@ -83,7 +186,7 @@ async function main() {
       totalBet += betResult.bet;
 
       // --- Deal & card exchange ---
-      const drawResult = await playDraw(rl);
+      const drawResult = await playDraw();
       if (drawResult === null) {
         output.write("またね！\n");
         break;
@@ -123,7 +226,7 @@ async function handleBet(rl, credits, lastBet) {
   return { bet, credits: credits - bet, lastBet: bet };
 }
 
-async function playDraw(rl) {
+async function playDraw() {
   const shuffled = shuffleDeck(createDeck());
   const initialDeal = dealHand(shuffled);
   const exchangeIndexes = await selectExchangeCards(initialDeal.hand);

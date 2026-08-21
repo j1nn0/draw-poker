@@ -78,3 +78,10 @@ DRAW_POKER_DATA_DIR=/tmp/test-draw-poker pnpm test
 - `pnpm start` — ゲームを起動
 - `pnpm test` — テスト実行（Node.js標準テストランナー）
 - `pnpm build` — 構文チェック
+- `node src/cli.js --help` — ヘルプを表示（非TTYでも動作）
+- `node src/cli.js --version` — バージョンを表示
+- `node src/cli.js --stats` — 累計統計と歴代記録を表示（非TTY対応、DRAW_POKER_DATA_DIR 対応）
+- `node src/cli.js --paytable` / `-p` — ペイテーブルを表示して終了
+- `node src/cli.js --achievements` / `-a` — 実績一覧を表示して終了
+
+> `pnpm start` に引数を渡す場合は `pnpm start -- --help` のように `--` を挟んでください。直接実行は `node src/cli.js --help` が確実です。ヘッドレス系フラグ（`--help`/`--version`/`--stats`/`--paytable`/`--achievements`）は TTY チェック前に処理されるため、パイプやCI環境でも動作します。

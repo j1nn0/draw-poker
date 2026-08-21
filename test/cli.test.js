@@ -13,7 +13,15 @@ import {
   renderCardsRow,
   renderTwoCards,
   renderCardLabels,
+  parseArgs,
+  getVersion,
+  buildHelpText,
+  buildStatsOutput,
 } from "../src/cli.js";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // ── displayWidth ───────────────────────────────────────────────────────
 test("displayWidth counts ASCII as 1", () => {
@@ -336,10 +344,6 @@ test("renderCardLabels returns labels for count", () => {
 
 test("renderCardLabels each label padded to 7 with centered number", () => {
   const labels = renderCardLabels(2);
-  // Each label is 7 wide: e.g., "  1    " + " " between? Actually join with single space
-  // So total pattern: padStart(3).padEnd(7)
-  const parts = labels.split(" ");
-  // Should contain numbers
   assert.ok(labels.includes("1"));
   assert.ok(labels.includes("2"));
 });
@@ -351,4 +355,149 @@ test("renderCardLabels with 0 returns empty", () => {
 test("renderCardLabels with 1 returns single label", () => {
   const labels = renderCardLabels(1);
   assert.match(labels, /1/);
+});
+
+// ── parseArgs ──────────────────────────────────────────────────────────
+test("parseArgs returns all false for empty argv", () => {
+  assert.deepEqual(parseArgs([]), { help: false, version: false, stats: false, paytable: false, achievements: false, unknown: null });
+});
+
+test("parseArgs handles --help and -h", () => {
+  assert.equal(parseArgs(["--help"]).help, true);
+  assert.equal(parseArgs(["-h"]).help, true);
+});
+
+test("parseArgs handles --version and -v", () => {
+  assert.equal(parseArgs(["--version"]).version, true);
+  assert.equal(parseArgs(["-v"]).version, true);
+});
+
+test("parseArgs handles --stats, --paytable, --achievements", () => {
+  assert.equal(parseArgs(["--stats"]).stats, true);
+  assert.equal(parseArgs(["--paytable"]).paytable, true);
+  assert.equal(parseArgs(["-p"]).paytable, true);
+  assert.equal(parseArgs(["--achievements"]).achievements, true);
+  assert.equal(parseArgs(["-a"]).achievements, true);
+});
+
+test("parseArgs handles multiple flags", () => {
+  const f = parseArgs(["--help", "--stats"]);
+  assert.equal(f.help, true);
+  assert.equal(f.stats, true);
+});
+
+test("parseArgs detects unknown flags", () => {
+  assert.equal(parseArgs(["--unknown"]).unknown, "--unknown");
+  assert.equal(parseArgs(["-x"]).unknown, "-x");
+  assert.equal(parseArgs(["hello"]).unknown, "hello");
+});
+
+test("parseArgs unknown stops at first unknown", () => {
+  const f = parseArgs(["--help", "--unknown"]);
+  assert.equal(f.unknown, "--unknown");
+});
+
+// ── getVersion ─────────────────────────────────────────────────────────
+test("getVersion returns semver", () => {
+  const v = getVersion();
+  assert.match(v, /^\d+\.\d+\.\d+/);
+});
+
+// ── buildHelpText ──────────────────────────────────────────────────────
+test("buildHelpText contains expected sections", () => {
+  const help = buildHelpText();
+  assert.match(help, /使い方/);
+  assert.match(help, /--help/);
+  assert.match(help, /--version/);
+  assert.match(help, /--stats/);
+  assert.match(help, /--paytable/);
+  assert.match(help, /--achievements/);
+  assert.match(help, /DRAW_POKER_DATA_DIR/);
+});
+
+// ── buildStatsOutput ───────────────────────────────────────────────────
+test("buildStatsOutput contains highScores and credits", () => {
+  const highScores = {
+    maxCredits: 1234,
+    bestHandRank: 9,
+    bestHandName: "Royal Flush",
+    maxDoubleUps: 5,
+    totalGamesPlayed: 42,
+    totalGamesWon: 10,
+    totalBet: 500,
+    totalPayout: 800,
+  };
+  const progress = Array.from({ length: 30 }, (_, i) => ({ id: `${i}` }));
+  const out = buildStatsOutput({ highScores, credits: 999, progress, total: 7 });
+  assert.match(out, /コイン: 999/);
+  assert.match(out, /最高コイン: 1234/);
+  assert.match(out, /ロイヤルストレートフラッシュ/);
+  assert.match(out, /最大ダブルアップ: 5/);
+  assert.match(out, /通算プレイ回数: 42/);
+  assert.match(out, /通算収支: \+300/);
+  assert.match(out, /実績: 7\/30/);
+});
+
+test("buildStatsOutput handles negative net", () => {
+  const highScores = {
+    maxCredits: 0, bestHandRank: 0, bestHandName: "N/A", maxDoubleUps: 0,
+    totalGamesPlayed: 1, totalGamesWon: 0, totalBet: 100, totalPayout: 10,
+  };
+  const out = buildStatsOutput({ highScores, credits: 0, progress: [], total: 0 });
+  assert.match(out, /通算収支: -90/);
+});
+
+// ── spawn integration: headless flags work piped ───────────────────────
+test("spawn --help outputs help and exits 0", () => {
+  const r = spawnSync(process.execPath, ["src/cli.js", "--help"], { encoding: "utf8" });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /使い方/);
+});
+
+test("spawn --version outputs version", () => {
+  const r = spawnSync(process.execPath, ["src/cli.js", "--version"], { encoding: "utf8" });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout.trim(), /^\d+\.\d+\.\d+/);
+});
+
+test("spawn --paytable outputs paytable", () => {
+  const r = spawnSync(process.execPath, ["src/cli.js", "--paytable"], { encoding: "utf8" });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /ペイテーブル/);
+});
+
+test("spawn --stats outputs stats with temp dir", () => {
+  const dir = mkdtempSync(join(tmpdir(), "draw-poker-test-"));
+  try {
+    const r = spawnSync(process.execPath, ["src/cli.js", "--stats"], {
+      encoding: "utf8",
+      env: { ...process.env, DRAW_POKER_DATA_DIR: dir },
+    });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /統計/);
+    assert.match(r.stdout, /コイン:/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("spawn --achievements outputs achievements", () => {
+  const dir = mkdtempSync(join(tmpdir(), "draw-poker-test-"));
+  try {
+    const r = spawnSync(process.execPath, ["src/cli.js", "--achievements"], {
+      encoding: "utf8",
+      env: { ...process.env, DRAW_POKER_DATA_DIR: dir },
+    });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /実績一覧/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("spawn unknown flag exits 1 and shows help", () => {
+  const r = spawnSync(process.execPath, ["src/cli.js", "--unknown"], { encoding: "utf8" });
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /不明なオプション/);
+  assert.match(r.stdout, /使い方/);
 });
