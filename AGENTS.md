@@ -30,7 +30,7 @@
 - `localizeHandName(name)` in cli.js maps English hand names to Japanese (e.g. "Royal Flush" → "ロイヤルストレートフラッシュ").
 - Card selection uses interactive arrow-key navigation (←/→, Space, Enter, q) plus number keys: 1-5 toggles in the exchange screen, 1-4 selects directly in double-up.
 - Bet input validates integer-only (`/^\d+$/`) with separate error messages for non-integer vs out-of-range.
-- Data persistence uses `~/.draw-poker/` for JSON storage. The `DRAW_POKER_DATA_DIR` environment variable overrides this for testing. `saveCredits()` writes only when credits actually change; `endSession()` always saves final state.
+- Data persistence uses `~/.draw-poker/` for JSON storage (credits.json, highscores.json, achievements.json). The `DRAW_POKER_DATA_DIR` environment variable overrides this for testing. `saveCredits()` writes only when credits actually change; `endSession()` always saves final state.
 - `main()` in `cli.js` is split into focused phase functions: `handleGameOver()`, `getBet()`, `playDoubleUpLoop()`, and `endSession()`. Session state is orchestrated in ~70 lines.
 - `updateHighScores()` merges peak records; `accumulateStats()` sums cumulative totals (totalGamesPlayed/Won/Bet/Payout) across sessions. `mergeSessionResults()` combines both into a single call — preferred over calling the two separately. `detectNewRecords()` compares session peaks against stored highscores to identify which records were broken.
 - `getHeldIndexes(hand, exchangeIndexes)` in game.js inverts a set of exchange indexes into the held-indexes set expected by `drawCards()`. Renamed from `indexesNotSelected` in cli.js for clarity.

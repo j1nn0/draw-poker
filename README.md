@@ -46,6 +46,7 @@ pnpm start
 
 - **`~/.draw-poker/credits.json`** — コイン残高（次回起動時に復元）
 - **`~/.draw-poker/highscores.json`** — 歴代記録（最高コイン・最高役・最大ダブルアップ）＋通算統計（累計プレイ回数・通算収支）
+- **`~/.draw-poker/achievements.json`** — 実績の解除状況（解除済み実績・達成した役の種類・通算ダブルアップ成功数）
 
 環境変数 `DRAW_POKER_DATA_DIR` で保存先ディレクトリを変更できます：
 
