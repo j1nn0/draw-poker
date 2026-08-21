@@ -182,13 +182,21 @@ async function handleGameOver(rl, stats, highScores) {
   };
   const updatedHighScores = mergeSessionResults(highScores, sessionStats);
 
-  output.write("\n╔══════════════════════════════════════╗\n");
-  output.write("║                                      ║\n");
-  output.write("║        ゲームオーバー                ║\n");
-  output.write("║                                      ║\n");
-  output.write("║    コインがなくなりました             ║\n");
-  output.write("║                                      ║\n");
-  output.write("╚══════════════════════════════════════╝\n\n");
+  const GAME_OVER_BOX_WIDTH = 46;
+  const SEP = "═".repeat(GAME_OVER_BOX_WIDTH);
+  const boxRows = [
+    "",
+    centerBoxText("ゲームオーバー", GAME_OVER_BOX_WIDTH),
+    "",
+    centerBoxText("コインがなくなりました", GAME_OVER_BOX_WIDTH),
+    "",
+  ];
+
+  output.write(`\n╔${SEP}╗\n`);
+  for (const row of boxRows) {
+    output.write(`${formatBoxRow(row, GAME_OVER_BOX_WIDTH)}\n`);
+  }
+  output.write(`╚${SEP}╝\n\n`);
   output.write(`プレイ回数: ${stats.gamesPlayed}\n`);
   output.write(`勝利回数: ${stats.gamesWon}\n`);
   output.write(`最高役: ${stats.bestHand ? localizeHandName(stats.bestHand.name) : "N/A"}\n`);
@@ -529,10 +537,41 @@ function localizeHandName(name) {
 
 function displayWidth(str) {
   let w = 0;
-  for (const char of str) {
+  const visibleStr = str.replace(/\x1b\[[0-9;]*m/g, "");
+  for (const char of visibleStr) {
     w += char.charCodeAt(0) > 0x7F ? 2 : 1;
   }
   return w;
+}
+
+function formatBoxRow(content, innerWidth) {
+  const padding = Math.max(0, innerWidth - displayWidth(content));
+  return `║${content}${" ".repeat(padding)}║`;
+}
+
+function centerBoxText(text, innerWidth) {
+  const textWidth = displayWidth(text);
+  const leftPadding = Math.max(0, Math.floor((innerWidth - textWidth) / 2));
+  const rightPadding = Math.max(0, innerWidth - textWidth - leftPadding);
+  return `${" ".repeat(leftPadding)}${text}${" ".repeat(rightPadding)}`;
+}
+
+function truncateDisplayWidth(str, maxWidth) {
+  const text = String(str);
+  if (maxWidth <= 0) return "";
+  if (displayWidth(text) <= maxWidth) return text;
+
+  const ellipsis = "…";
+  const targetWidth = Math.max(0, maxWidth - displayWidth(ellipsis));
+  let result = "";
+  let resultWidth = 0;
+  for (const char of text) {
+    const charWidth = displayWidth(char);
+    if (resultWidth + charWidth > targetWidth) break;
+    result += char;
+    resultWidth += charWidth;
+  }
+  return `${result}${maxWidth >= displayWidth(ellipsis) ? ellipsis : ""}`;
 }
 
 function showPayTable() {
@@ -562,9 +601,22 @@ function showPayTable() {
 }
 
 function progressBar(current, total, width = 10) {
-  const filled = Math.round((current / total) * width);
-  const empty = width - filled;
-  const color = current <= Math.floor(total * 0.3) ? "\x1b[31m" : current >= Math.ceil(total * 0.7) ? "\x1b[32m" : "\x1b[33m";
+  const barWidth = Number.isFinite(width) ? Math.max(0, Math.floor(width)) : 0;
+  const safeCurrent = Number.isFinite(current) ? current : 0;
+  const safeTotal = Number.isFinite(total) ? total : 0;
+  const ratio = safeTotal > 0 ? safeCurrent / safeTotal : 0;
+  const filled = Math.min(barWidth, Math.max(0, Math.round(ratio * barWidth)));
+  const empty = barWidth - filled;
+
+  let color;
+  if (safeTotal <= 0 || safeCurrent <= Math.floor(safeTotal * 0.3)) {
+    color = "\x1b[31m";
+  } else if (safeCurrent >= Math.ceil(safeTotal * 0.7)) {
+    color = "\x1b[32m";
+  } else {
+    color = "\x1b[33m";
+  }
+
   return `${color}${"█".repeat(filled)}\x1b[0m${"░".repeat(empty)}`;
 }
 
@@ -572,10 +624,13 @@ function showAchievements() {
   const progress = getAchievementProgress();
   const categories = getCategoryProgress();
   const total = getTotalUnlocked();
-  const SEP = "═".repeat(48);
+  const BOX_WIDTH = 48;
+  const CONTENT_WIDTH = BOX_WIDTH - 1;
+  const SEP = "═".repeat(BOX_WIDTH);
 
   output.write(`\n╔${SEP}╗\n`);
-  output.write(`║${" ".repeat(16)}実績一覧 (${total}/${progress.length})${" ".repeat(15)}║\n`);
+  const title = `実績一覧 (${total}/${progress.length})`;
+  output.write(`${formatBoxRow(centerBoxText(title, BOX_WIDTH), BOX_WIDTH)}\n`);
 
   const categoryOrder = ["hand", "doubleup", "cumulative", "milestone", "challenge"];
   const catLabels = {
@@ -589,7 +644,8 @@ function showAchievements() {
     const catItems = progress.filter((a) => a.category === catId);
     const bar = progressBar(cat.unlocked, cat.total);
     output.write(`╠${SEP}╣\n`);
-    output.write(`║ ${cat.icon || "?"} ${catLabels[catId]} ${bar} ${cat.unlocked}/${cat.total}${" ".repeat(Math.max(1, 12 - String(cat.total).length - String(cat.unlocked).length))}║\n`);
+    const categoryLine = ` ${cat.icon || "?"} ${catLabels[catId]} ${bar} ${cat.unlocked}/${cat.total}`;
+    output.write(`${formatBoxRow(categoryLine, BOX_WIDTH)}\n`);
 
     // Show up to 4 items per category (show first unlocked, first locked)
     const unlocked = catItems.filter((a) => a.unlocked).slice(0, 2);
@@ -598,15 +654,26 @@ function showAchievements() {
 
     for (const ach of shown) {
       const marker = ach.unlocked ? "★" : "☆";
-      const name = `${marker} ${ach.icon} ${ach.name}`;
-      const suffix = ach.unlocked ? "" : `  (${ach.description})`;
+      const rawName = `${marker} ${ach.icon} ${ach.name}`;
+      const name = truncateDisplayWidth(rawName, CONTENT_WIDTH);
+      let suffix = "";
+      if (!ach.unlocked) {
+        const descriptionPrefix = "  (";
+        const descriptionSuffix = ")";
+        const descriptionWidth = Math.max(
+          0,
+          CONTENT_WIDTH - displayWidth(name + descriptionPrefix + descriptionSuffix),
+        );
+        const description = truncateDisplayWidth(ach.description, descriptionWidth);
+        suffix = `${descriptionPrefix}${description}${descriptionSuffix}`;
+      }
       const line = `${name}${suffix}`;
-      const padTotal = 48 - displayWidth(line.replace(/\x1b\[[0-9;]*m/g, ""));
-      output.write(`║ ${line}${" ".repeat(Math.max(0, padTotal - 1))}║\n`);
+      const padTotal = Math.max(0, CONTENT_WIDTH - displayWidth(line));
+      output.write(`║ ${line}${" ".repeat(padTotal)}║\n`);
     }
 
     if (catItems.length > shown.length) {
-      output.write(`║ ${" ".repeat(47)}║\n`);
+      output.write(`${formatBoxRow("", BOX_WIDTH)}\n`);
     }
   }
 
