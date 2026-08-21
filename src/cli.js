@@ -43,8 +43,6 @@ async function main() {
   let maxDoubleUps = 0;
   let lastBet = 1;
 
-  emit("session:start", { credits });
-
   try {
     // Initialize achievements
     const achievementsData = loadAchievements();
@@ -55,6 +53,8 @@ async function main() {
       process.stdout.write("\x07");
       output.write(`\n★ 実績解除: ${data.name} ★\n`);
     });
+
+    emit("session:start", { credits });
 
     showPayTable();
 
