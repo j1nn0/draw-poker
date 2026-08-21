@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test, { after } from "node:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -65,6 +65,60 @@ test("saveAchievements and loadAchievements round-trip", () => {
   saveAchievements(state);
   const loaded = loadAchievements();
   assert.deepEqual(loaded, state);
+});
+
+test("loadAchievements ignores corrupted top-level JSON", () => {
+  // Top-level is not an object: null, array, string
+  for (const content of ["null", "[]", '"hello"', "42"]) {
+    writeFileSync(join(tempDir, "achievements.json"), content);
+    const data = loadAchievements();
+    assert.deepEqual(data, { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 });
+  }
+});
+
+test("loadAchievements filters invalid unlocked and handTypesAchieved entries", () => {
+  writeFileSync(
+    join(tempDir, "achievements.json"),
+    JSON.stringify({
+      unlocked: { good: "2026-01-01T00:00:00.000Z", bad: 123, bad2: null },
+      handTypesAchieved: ["Pair", 123, null, "Flush"],
+      totalDoubleUps: 5,
+    }),
+  );
+  const data = loadAchievements();
+  assert.deepEqual(data.unlocked, { good: "2026-01-01T00:00:00.000Z" });
+  assert.deepEqual(data.handTypesAchieved, ["Pair", "Flush"]);
+  assert.equal(data.totalDoubleUps, 5);
+});
+
+test("loadAchievements normalizes invalid totalDoubleUps", () => {
+  for (const [raw, expected] of [
+    ["10", 0],
+    [-5, 0],
+    [5.9, 5],
+    [null, 0],
+  ]) {
+    writeFileSync(
+      join(tempDir, "achievements.json"),
+      JSON.stringify({ unlocked: {}, handTypesAchieved: [], totalDoubleUps: raw }),
+    );
+    const data = loadAchievements();
+    assert.equal(data.totalDoubleUps, expected, `raw=${JSON.stringify(raw)}`);
+  }
+});
+
+test("loadAchievements tolerates malformed JSON and missing fields", () => {
+  writeFileSync(join(tempDir, "achievements.json"), "{not json");
+  assert.deepEqual(loadAchievements(), { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 });
+
+  writeFileSync(join(tempDir, "achievements.json"), JSON.stringify({}));
+  assert.deepEqual(loadAchievements(), { unlocked: {}, handTypesAchieved: [], totalDoubleUps: 0 });
+
+  // unlocked as string should not pollute Map (previous bug would create numeric keys)
+  writeFileSync(join(tempDir, "achievements.json"), JSON.stringify({ unlocked: "oops", handTypesAchieved: ["Pair"], totalDoubleUps: 1 }));
+  const data = loadAchievements();
+  assert.deepEqual(data.unlocked, {});
+  assert.deepEqual(data.handTypesAchieved, ["Pair"]);
 });
 
 after(() => {
